@@ -5,7 +5,7 @@ import * as Effect from "effect/Effect";
 import { beforeEach, describe, expect, it } from "vitest";
 import * as Technitium from "../../src/index.ts";
 import { ZONES } from "./context.ts";
-import { clearZone, harness, marker, recordsAt, webConsole } from "./harness.ts";
+import { clearZone, commentsOf, harness, marked, recordsAt, webConsole } from "./harness.ts";
 
 const ZONE = "example.test";
 const WWW = "www.example.test";
@@ -55,7 +55,7 @@ describe("Technitium.Record", () => {
         value: "192.0.2.10",
         ttl: 300,
         disabled: false,
-        comments: `web server ${marker("www")}`,
+        comments: marked("www", "web server"),
       },
     ]);
     expect(stack.writes).toEqual([`add ${WWW}`]);
@@ -94,7 +94,7 @@ describe("Technitium.Record", () => {
         value: "192.0.2.11",
         ttl: 60,
         disabled: true,
-        comments: `moved ${marker("www")}`,
+        comments: marked("www", "moved"),
       },
     ]);
     await stack.deploy(
@@ -122,7 +122,7 @@ describe("Technitium.Record", () => {
       type: "A",
       ipAddress: "192.0.2.10",
       ttl: 300,
-      comments: marker("www"),
+      comments: await commentsOf(ZONE, WWW, "A"),
     });
     await stack.deploy(a({ name: "web.example.test", ttl: 300 }));
     expect(stack.writes).toEqual([`add ${WWW}`]);
@@ -140,7 +140,7 @@ describe("Technitium.Record", () => {
     }).pipe(renamedFrom("www"), RemovalPolicy.destroy());
     // The state moves to the new ID, and the engine's update replaces the old marker.
     await stack.deploy(renamed);
-    expect(await recordsAt(ZONE, WWW)).toMatchObject([{ comments: marker("web") }]);
+    expect(await recordsAt(ZONE, WWW)).toMatchObject([{ comments: marked("web") }]);
     await stack.destroy();
     expect(await recordsAt(ZONE, WWW)).toEqual([]);
     expect(stack.writes).toEqual([`add ${WWW}`, `update ${WWW}`, `delete ${WWW}`]);
@@ -205,7 +205,7 @@ describe("Technitium.Record", () => {
         value: "192.0.2.12",
         ttl: 120,
         disabled: false,
-        comments: `managed ${marker("www")}`,
+        comments: marked("www", "managed"),
       },
       unmanaged,
     ]);
@@ -258,18 +258,22 @@ describe("Technitium.Record", () => {
         value: "192.0.2.10",
         ttl: 60,
         disabled: false,
-        comments: `legacy ${marker("www")}`,
+        comments: marked("www", "legacy"),
       },
     ]);
     expect(stack.writes).toEqual([`update ${WWW}`]);
   });
 
-  it("recovers lost state from the marker without --adopt and without writes", async () => {
+  it("recovers lost state from the marker without --adopt, rewriting only the marker", async () => {
     const stack = harness();
     await stack.deploy(a({ ttl: 300 }));
+    const before = await recordsAt(ZONE, WWW);
     stack.loseState();
     await stack.deploy(a({ ttl: 300 }));
-    expect(stack.writes).toEqual([`add ${WWW}`]);
+    // The new state has a new instance, so the marker's instance part is rewritten once.
+    expect(stack.writes).toEqual([`add ${WWW}`, `update ${WWW}`]);
+    expect(await recordsAt(ZONE, WWW)).toEqual([{ ...before[0], comments: marked("www") }]);
+    expect((await recordsAt(ZONE, WWW))[0]?.comments).not.toBe(before[0]?.comments);
     expect((await stack.attributes()).www).toMatchObject({ value: "192.0.2.10", ttl: 300 });
     // Another stack sees the marker of this one and needs --adopt.
     expect(await harness({ stack: "other" }).deployFailure(a({ ttl: 300 }))).toContain(
@@ -287,7 +291,7 @@ describe("Technitium.Record", () => {
       ipAddress: "192.0.2.10",
       newIpAddress: "192.0.2.50",
       ttl: 300,
-      comments: marker("www"),
+      comments: await commentsOf(ZONE, WWW, "A"),
     });
     const detected = await stack.drift();
     expect(Object.values(detected.resources)[0]).toMatchObject({
@@ -296,7 +300,7 @@ describe("Technitium.Record", () => {
     });
     await stack.drift(true);
     expect(await recordsAt(ZONE, WWW)).toMatchObject([
-      { value: "192.0.2.10", comments: marker("www") },
+      { value: "192.0.2.10", comments: marked("www") },
     ]);
 
     await clearZone(ZONE);
@@ -332,6 +336,44 @@ describe("Technitium.Record", () => {
     });
     expect(await stack.destroyFailure()).toContain("does not carry this resource's marker");
     expect(await recordsAt(ZONE, WWW)).toHaveLength(1);
+  });
+
+  it("never changes a record that lost this resource's marker or carries another one", async () => {
+    const stack = harness();
+    await stack.deploy(a({ ttl: 300 }));
+    // Deleted and recreated in the web console with the same address, without the marker.
+    await webConsole("/api/zones/records/delete", {
+      zone: ZONE,
+      domain: WWW,
+      type: "A",
+      ipAddress: "192.0.2.10",
+    });
+    await addByHand({
+      type: "A",
+      ipAddress: "192.0.2.10",
+      ttl: 300,
+      comments: "externally recreated",
+    });
+    const recreated = await recordsAt(ZONE, WWW);
+    expect(await stack.deployFailure(a({ address: "192.0.2.11", ttl: 300 }))).toContain(
+      "has no marker of this resource",
+    );
+    expect(await recordsAt(ZONE, WWW)).toEqual(recreated);
+    // Taken over by another resource of the same stack and stage.
+    await webConsole("/api/zones/records/update", {
+      zone: ZONE,
+      domain: WWW,
+      type: "A",
+      ipAddress: "192.0.2.10",
+      ttl: 300,
+      comments: "[alchemy:technitium/test/other#00000000]",
+    });
+    const reassigned = await recordsAt(ZONE, WWW);
+    expect(await stack.deployFailure(a({ address: "192.0.2.11", ttl: 300 }))).toContain(
+      "carries the marker of technitium/test/other",
+    );
+    expect(await recordsAt(ZONE, WWW)).toEqual(reassigned);
+    expect(stack.writes).toEqual([`add ${WWW}`]);
   });
 
   it("never makes Technitium delete a PTR record", async () => {

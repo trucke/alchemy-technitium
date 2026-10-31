@@ -14,7 +14,7 @@ import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import * as HttpClient from "effect/http/HttpClient";
 import * as Layer from "effect/Layer";
 import * as Redacted from "effect/Redacted";
-import { inject } from "vitest";
+import { expect, inject } from "vitest";
 import * as Technitium from "../../src/index.ts";
 import "./context.ts";
 
@@ -87,8 +87,22 @@ export async function clearZone(zone: string) {
       });
 }
 
-/** The marker the provider writes for a resource of the harness stack. */
-export const marker = (fqn: string, stack = "technitium") => `[alchemy:${stack}/test/${fqn}]`;
+/**
+ * Matches a comment that ends with the marker of a resource of the harness stack. The marker's
+ * instance part is random, so only its form is checked.
+ */
+export const marked = (fqn: string, comment = "", stack = "technitium") =>
+  expect.stringMatching(
+    new RegExp(`^${comment ? `${comment} ` : ""}\\[alchemy:${stack}/test/${fqn}#[0-9a-f]{8}\\]$`),
+  );
+
+/** The stored comment of the only record of a type at a name, to resend it as the web console does. */
+export async function commentsOf(zone: string, name: string, type: string) {
+  const record = (await recordsAt(zone, name)).find((r) => r.type === type);
+  if (record?.comments === undefined)
+    throw new Error(`no ${type} record with a comment at ${name}`);
+  return record.comments;
+}
 
 /**
  * The Record provider with the scoped token, strict response validation and an HTTP client that

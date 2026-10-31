@@ -9,6 +9,7 @@ import {
   normalize,
   type Observed,
   ownerOf,
+  ownership,
   parseComment,
   placement,
   reverseName,
@@ -21,7 +22,7 @@ const record = (overrides: Partial<Observed>): Observed => ({
   ttl: 300,
   disabled: false,
   comment: "",
-  owner: undefined,
+  marker: undefined,
   expiryTtl: 0,
   comments: "",
   ...overrides,
@@ -102,35 +103,51 @@ describe("normalize", () => {
 });
 
 describe("the marker", () => {
-  const owner = ownerOf("infra", "prod", "Homelab/nas record");
+  const owner = ownerOf("infra", "prod", "Homelab/nas record", "1f2e3d4c5b6a79880011223344556677");
 
   it("encodes each part so the marker stays one token", () => {
-    expect(owner).toBe("infra/prod/Homelab/nas%20record");
-    expect(markedComment("", owner)).toBe("[alchemy:infra/prod/Homelab/nas%20record]");
+    expect(owner).toEqual({ path: "infra/prod/Homelab/nas%20record", instance: "1f2e3d4c" });
+    expect(markedComment("", owner)).toBe("[alchemy:infra/prod/Homelab/nas%20record#1f2e3d4c]");
   });
 
-  it("splits a stored comment into the comment and the owner", () => {
+  it("splits a stored comment into the comment and the marker", () => {
     expect(parseComment(markedComment("NAS on VLAN 10", owner))).toEqual({
       comment: "NAS on VLAN 10",
-      owner,
+      marker: owner,
     });
-    expect(parseComment("by hand")).toEqual({ comment: "by hand", owner: undefined });
-    expect(parseComment(undefined)).toEqual({ comment: "", owner: undefined });
+    expect(parseComment("NAS [alchemy:infra/prod/nas]")).toEqual({
+      comment: "NAS",
+      marker: { path: "infra/prod/nas", instance: undefined },
+    });
+    expect(parseComment("by hand")).toEqual({ comment: "by hand", marker: undefined });
+    expect(parseComment(undefined)).toEqual({ comment: "", marker: undefined });
+  });
+
+  it("tells this resource's records from unmarked and foreign ones", () => {
+    const nas = ownerOf("infra", "prod", "nas", "1f2e3d4c00000000");
+    expect(ownership(nas, nas)).toBe("ours");
+    // A marker written before 0.2.0 has no instance; its path decides.
+    expect(ownership({ path: "infra/prod/nas", instance: undefined }, nas)).toBe("ours");
+    // renamedFrom keeps the instance: the old name's marker is still ours.
+    expect(ownership({ path: "infra/prod/old-nas", instance: "1f2e3d4c" }, nas)).toBe("ours");
+    expect(ownership(undefined, nas)).toBe("unmarked");
+    expect(ownership({ path: "infra/prod/other", instance: "99999999" }, nas)).toBe("foreign");
+    expect(ownership({ path: "infra/test/old-nas", instance: "1f2e3d4c" }, nas)).toBe("foreign");
   });
 });
 
 describe("findRecord", () => {
-  const owner = ownerOf("infra", "prod", "nas");
+  const owner = ownerOf("infra", "prod", "nas", "1f2e3d4c00000000");
 
   it("prefers the record with the marker, then the declared value", () => {
-    const marked = record({ value: "192.0.2.9", owner });
+    const marked = record({ value: "192.0.2.9", marker: owner });
     const plain = record({ value: "192.0.2.2" });
     expect(findRecord([plain, marked], "A", owner, "192.0.2.2")).toBe(marked);
     expect(findRecord([plain], "A", owner, "192.0.2.2")).toBe(plain);
     expect(findRecord([plain], "A", owner, "192.0.2.3")).toBeUndefined();
-    expect(findRecord([marked, record({ value: "192.0.2.8", owner })], "A", owner, "x")).toBe(
-      "ambiguous",
-    );
+    expect(
+      findRecord([marked, record({ value: "192.0.2.8", marker: owner })], "A", owner, "x"),
+    ).toBe("ambiguous");
   });
 
   it("treats the only CNAME at a name as the record whatever its target", () => {

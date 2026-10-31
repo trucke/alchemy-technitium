@@ -169,25 +169,35 @@ declared one and that it is a Primary zone. The server tests confirm the fallbac
 Records have no IDs. A record is its zone, name, type and value (the address or target), and
 several records with the same name and type form a set.
 
-The provider marks the records it manages by appending `[alchemy:<stack>/<stage>/<fqn>]` to their
-comment. A marker was chosen over state alone, as NetBird policies are handled, because comments
-exist and a marker:
+The provider marks the records it manages by appending `[alchemy:<stack>/<stage>/<fqn>#<instance>]`
+to their comment, where `<instance>` is the first eight hex digits of Alchemy's instance ID for
+the resource. A marker was chosen over state alone, as NetBird policies are handled, because
+comments exist and a marker:
 
 - identifies the record when its value was changed in the web console, which state alone cannot;
-- recovers lost state without `--adopt` and without writes;
-- lets deletion refuse a record that someone else recreated with the same value;
+- recovers lost state without `--adopt`;
+- tells a managed record from one that someone recreated with the same value;
 - shows in the web console that a record is managed by a stack.
 
 The marker includes the resource's FQN, not only the stack and stage as the Proxmox tags do. Two
 resources that declare the same record therefore conflict instead of sharing it, and a removed
 resource with `RemovalPolicy.destroy()` cannot delete a record that another resource of the stack
-adopted. A resource with state accepts the marker of another resource of its own stack and stage:
-after a `renamedFrom` rename, the engine moves the state and calls an update, which replaces the
-old marker.
+adopted. A record is this resource's when its marker has the resource's stack, stage and FQN, or
+the same stack, stage and instance. The second case is a `renamedFrom` rename: the engine moves
+the state with its instance ID to the new FQN and calls an update, which replaces the old marker.
 
 A record found without state is owned only with this resource's marker; anything else is
 `Unowned` and needs `--adopt`. Adoption may only add the marker: it fails if the declared TTL,
-disabled state, comment or CNAME target differs from the record.
+disabled state, comment or CNAME target differs from the record. A recovered state has a new
+instance ID, so the update after adoption rewrites the marker's instance and nothing else.
+
+With state, a record found by its value is still only changed or deleted if it carries this
+resource's marker. Without it, the record may have been deleted and recreated in the web
+console; with another resource's marker, it belongs to that resource. The engine offers no
+`--adopt` for resources that have state, so taking such a record over is a manual step: add the
+marker to its comment, or remove the resource from the stack for one deploy (the default removal
+policy keeps the record) and declare it again with `--adopt`. Markers written before 0.2.0 have
+no instance and match by stack, stage and FQN.
 
 ### Record sets
 

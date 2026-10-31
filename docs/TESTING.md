@@ -39,7 +39,8 @@ a failure.
 
 The tests run with distilled's strict response validation, so every response the provider reads
 must match the generated model. They record every record write the provider sends, so they can
-prove that an unchanged deploy or a recovered state writes nothing. Two tests run the documented
+prove that an unchanged deploy writes nothing and a refused change writes nothing either. Two
+tests run the documented
 examples: the SDK program with Node, and the stack with the Alchemy CLI (`deploy`, `plan` and
 `destroy`), both logged in through `TECHNITIUM_API_URL` and `TECHNITIUM_API_TOKEN`.
 

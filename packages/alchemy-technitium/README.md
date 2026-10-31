@@ -116,21 +116,27 @@ Attributes contain `zone`, `name`, `type`, `value` (the address or target), `ttl
 ## Ownership
 
 Technitium records have no IDs: a record is its zone, name, type and value. The provider marks the
-records it manages by appending `[alchemy:<stack>/<stage>/<resource>]` to their comment, for
-example `NAS [alchemy:Homelab/prod/nas]`. Each part is URI-encoded.
+records it manages by appending `[alchemy:<stack>/<stage>/<resource>#<instance>]` to their
+comment, for example `NAS [alchemy:Homelab/prod/nas#1f2e3d4c]`. Each part is URI-encoded, and
+`<instance>` is the start of Alchemy's instance ID for the resource.
 
 - A record with this resource's marker is found by the marker, even after its value changed in
   the web console. Without the marker, the declared value finds it (a name holds at most one
   CNAME record).
 - A record found without state is owned only if it carries this resource's marker. Then Alchemy
-  takes it over silently, so lost state recovers without `--adopt` and without writes. Any other
-  record needs `--adopt`.
+  takes it over silently, so lost state recovers without `--adopt`; the only write updates the
+  marker's instance. Any other record needs `--adopt`.
+- **With state, only a record with this resource's marker is changed or deleted.** A record
+  found by its value without the marker may have been deleted and recreated in the web console,
+  and one with another resource's marker belongs to that resource. The deploy fails and nothing is
+  written. To manage the record again, add the marker from the error message to its comment in the
+  web console, or remove the resource from the stack for one deploy and declare it again with
+  `--adopt`.
 - **Adoption only adds the marker.** If the record's TTL (when declared), disabled state or
   comment differ from the declaration, or a CNAME points elsewhere, adoption fails and nothing is
   written. Make the declaration match the server first.
-- A record that carries the marker of another stack or stage is never changed without `--adopt`.
-  Within a stack and stage, a resource renamed with `renamedFrom` from `alchemy/Rename` takes over
-  its old marker.
+- A resource renamed with `renamedFrom` from `alchemy/Rename` keeps its instance, so it
+  recognizes its old marker and replaces it.
 
 A plan compares the declaration with Alchemy's state, not with the server; `alchemy drift` shows
 changes made in the web console and repairs them.

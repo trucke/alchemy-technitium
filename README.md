@@ -46,7 +46,8 @@ export default Alchemy.Stack(
 ```
 
 `alchemy deploy` adds both records to the existing zone `homelab.example.com` and marks them with
-`[alchemy:Homelab/<stage>/nas]` and `[alchemy:Homelab/<stage>/files]` in their comments. A
+`[alchemy:Homelab/<stage>/nas#<instance>]` and `[alchemy:Homelab/<stage>/files#<instance>]` in
+their comments. A
 changed `address` updates the record in place, in the same plan as the resource that produced
 the address. Technitium increases the zone's serial and notifies its secondary servers, which
 transfer the zone as usual.
@@ -89,9 +90,10 @@ reachable over HTTPS, or over HTTP on a loopback address (for example through an
 
 ## Safety defaults
 
-- **Only marked records change.** A record without this resource's marker needs `--adopt`, and
-  adopting only adds the marker. Records with the same name that the stack does not declare are
-  never changed; a declaration that Technitium would apply to them as well fails the plan.
+- **Only marked records change.** A record without this resource's marker is never changed, also
+  when it was recreated in the web console after Alchemy created it. Taking it over is explicit,
+  and adopting only adds the marker. Records with the same name that the stack does not declare
+  are never changed; a declaration that Technitium would apply to them as well fails.
 - **Nothing is deleted by accident.** Removing a record from the stack makes Alchemy forget it and
   leaves it on the server. Deleting needs an explicit `RemovalPolicy.destroy()`, and the provider
   deletes only records that still carry the resource's marker.

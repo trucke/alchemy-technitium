@@ -90,9 +90,10 @@ export type Record = Resource<
  * One A, AAAA or CNAME record in an existing Primary zone of a Technitium DNS Server.
  *
  * Technitium records have no IDs. A record is identified by its zone, name, type and value, and
- * the provider marks the records it manages with `[alchemy:<stack>/<stage>/<resource>]` at the
- * end of their comment. A record without this resource's marker needs `--adopt`, and adopting
- * adds the marker without changing anything else. Other records with the same name and type
+ * the provider marks the records it manages with `[alchemy:<stack>/<stage>/<resource>#<instance>]`
+ * at the end of their comment. A record without this resource's marker is never changed: without
+ * state it needs `--adopt`, and adopting adds the marker without changing anything else. Other
+ * records with the same name and type
  * are left as they are; a change that Technitium would apply to them as well, such as a new
  * TTL, fails the plan.
  *
@@ -233,36 +234,66 @@ const validate = (props: RecordProps) => {
 // ---------------------------------------------------------------------------
 
 /**
- * The owner of a managed record: stack, stage and the resource's fully-qualified name, each
- * segment URI-encoded so the marker stays one token.
+ * The resource that manages a record. `path` is the stack, the stage and the resource's
+ * fully-qualified name, each segment URI-encoded so the marker stays one token. `instance` is
+ * the first eight hex digits of Alchemy's instance ID, which a `renamedFrom` rename keeps and
+ * which differs between resources.
  */
-export const ownerOf = (stack: string, stage: string, fqn: string) =>
-  [stack, stage, ...fqn.split("/")].map(encodeURIComponent).join("/");
+export interface Owner {
+  readonly path: string;
+  readonly instance: string;
+}
 
-const currentOwner = (fqn: string) =>
+export const ownerOf = (stack: string, stage: string, fqn: string, instanceId: string): Owner => ({
+  path: [stack, stage, ...fqn.split("/")].map(encodeURIComponent).join("/"),
+  instance: instanceId.slice(0, 8),
+});
+
+const currentOwner = (fqn: string, instanceId: string) =>
   Effect.gen(function* () {
     const stack = yield* Stack;
     const stage = yield* Stage;
-    return ownerOf(stack.name, stage, fqn);
+    return ownerOf(stack.name, stage, fqn, instanceId);
   });
 
-/** Whether two owners are the same stack and stage, possibly with different resources. */
-export const sameStage = (a: string, b: string) =>
-  a.split("/").slice(0, 2).join("/") === b.split("/").slice(0, 2).join("/");
+/** A marker as found in a comment. Markers written before 0.2.0 have no instance. */
+export interface Marker {
+  readonly path: string;
+  readonly instance: string | undefined;
+}
+
+export const markerText = (owner: Owner) => `[alchemy:${owner.path}#${owner.instance}]`;
 
 /** The comment the server stores: the declared comment, then the marker. */
-export const markedComment = (comment: string, owner: string) =>
-  comment === "" ? `[alchemy:${owner}]` : `${comment} [alchemy:${owner}]`;
+export const markedComment = (comment: string, owner: Owner) =>
+  comment === "" ? markerText(owner) : `${comment} ${markerText(owner)}`;
 
-/** Splits a stored comment into the comment and the owner of its marker, if any. */
+/** Splits a stored comment into the comment and its marker, if any. */
 export function parseComment(comments: string | undefined): {
   readonly comment: string;
-  readonly owner: string | undefined;
+  readonly marker: Marker | undefined;
 } {
-  const match = /^([\s\S]*?)\s*\[alchemy:([^\]\s]+)\]\s*$/.exec(comments ?? "");
+  const match = /^([\s\S]*?)\s*\[alchemy:([^\]\s#]+)(?:#([0-9a-f]+))?\]\s*$/.exec(comments ?? "");
   return match
-    ? { comment: match[1]!, owner: match[2]! }
-    : { comment: (comments ?? "").trim(), owner: undefined };
+    ? { comment: match[1]!, marker: { path: match[2]!, instance: match[3] } }
+    : { comment: (comments ?? "").trim(), marker: undefined };
+}
+
+/**
+ * Whose a record is. A marker with this resource's path, or with its instance in the same stack
+ * and stage after a `renamedFrom` rename, is `ours`. A record without a marker may have been
+ * recreated outside Alchemy, and one with another marker belongs to another resource.
+ */
+export function ownership(
+  marker: Marker | undefined,
+  owner: Owner,
+): "ours" | "unmarked" | "foreign" {
+  if (marker === undefined) return "unmarked";
+  if (marker.path === owner.path) return "ours";
+  const stage = (path: string) => path.split("/").slice(0, 2).join("/");
+  return stage(marker.path) === stage(owner.path) && marker.instance === owner.instance
+    ? "ours"
+    : "foreign";
 }
 
 // ---------------------------------------------------------------------------
@@ -280,14 +311,14 @@ export interface Observed {
   readonly ttl: number;
   readonly disabled: boolean;
   readonly comment: string;
-  readonly owner: string | undefined;
+  readonly marker: Marker | undefined;
   readonly expiryTtl: number;
   /** The stored comment, to detect changes to records the provider does not manage. */
   readonly comments: string;
 }
 
 export function observeRecord(record: LiveRecord): Observed {
-  const { comment, owner } = parseComment(record.comments);
+  const { comment, marker } = parseComment(record.comments);
   const data = record.rData;
   const value =
     record.type === "A" || record.type === "AAAA"
@@ -302,7 +333,7 @@ export function observeRecord(record: LiveRecord): Observed {
     ttl: record.ttl,
     disabled: record.disabled,
     comment,
-    owner,
+    marker,
     expiryTtl: record.expiryTtl,
     comments: record.comments ?? "",
   };
@@ -367,22 +398,23 @@ const observeName = (zone: string, name: string) =>
 
 /**
  * The record a resource manages among the records at its name: the one with its marker,
- * otherwise the one with its value (for a CNAME, the only one).
+ * otherwise the one with its value (for a CNAME, the only one). The caller decides from
+ * {@link ownership} whether it may change the second kind.
  */
 export function findRecord(
   records: readonly Observed[],
   type: RecordType,
-  owner: string,
+  owner: Owner,
   value: string,
 ): Observed | "ambiguous" | undefined {
   const sameType = records.filter((record) => record.type === type);
-  const marked = sameType.filter((record) => record.owner === owner);
+  const marked = sameType.filter((record) => ownership(record.marker, owner) === "ours");
   if (marked.length > 1) return "ambiguous";
   if (marked[0]) return marked[0];
   return type === "CNAME" ? sameType[0] : sameType.find((record) => record.value === value);
 }
 
-const find = (set: NameRecords, type: RecordType, owner: string, value: string) => {
+const find = (set: NameRecords, type: RecordType, owner: Owner, value: string) => {
   const found = findRecord(set.records, type, owner, value);
   return found === "ambiguous"
     ? Effect.fail(
@@ -537,13 +569,15 @@ export const RecordProvider = () =>
       /** Re-reads the record after a write and fails unless the server stored exactly `want`. */
       const verify = (
         want: Desired,
-        owner: string,
+        owner: Owner,
         before: readonly NameRecords[],
         written: readonly Observed[],
       ) =>
         Effect.gen(function* () {
           const after = yield* observeName(want.zone, want.name);
-          const record = after.records.find((r) => r.type === want.type && r.owner === owner);
+          const record = after.records.find(
+            (r) => r.type === want.type && r.comments === markedComment(r.comment, owner),
+          );
           const label = `Technitium ${want.type} record "${want.name}"`;
           if (record === undefined)
             return yield* new TechnitiumRecordMismatch({
@@ -580,7 +614,7 @@ export const RecordProvider = () =>
       const valueParameters = (type: RecordType, value: string) =>
         type === "CNAME" ? { cname: value } : { ipAddress: value };
 
-      const create = (want: Desired, owner: string, set: NameRecords) =>
+      const create = (want: Desired, owner: Owner, set: NameRecords) =>
         Effect.gen(function* () {
           const place = placement(set.records, want, undefined);
           if ("refused" in place) return yield* refuse(place.refused);
@@ -600,7 +634,9 @@ export const RecordProvider = () =>
           if (want.disabled) {
             // Records cannot be created disabled; disable it with the same TTL and comment.
             const added = yield* observeName(want.zone, want.name);
-            const record = added.records.find((r) => r.type === want.type && r.owner === owner);
+            const record = added.records.find(
+              (r) => r.type === want.type && r.comments === markedComment(want.comment, owner),
+            );
             if (record === undefined)
               return yield* new TechnitiumRecordMismatch({
                 message: `Technitium ${want.type} record "${want.name}" is missing after it was added.`,
@@ -624,7 +660,7 @@ export const RecordProvider = () =>
 
       const update = (
         want: Desired,
-        owner: string,
+        owner: Owner,
         set: NameRecords,
         current: Observed,
         adopting: boolean,
@@ -635,18 +671,15 @@ export const RecordProvider = () =>
             return yield* refuse(
               `${label} expires automatically after ${current.expiryTtl} seconds, which the provider does not manage. Remove the expiry in the web console first.`,
             );
-          // A marker of another resource of this stack and stage comes from a logical ID rename
-          // (`renamedFrom`): the engine moves the state, then this update replaces the marker.
-          if (
-            current.owner !== undefined &&
-            current.owner !== owner &&
-            !adopting &&
-            !sameStage(current.owner, owner)
-          )
+          const owned = ownership(current.marker, owner);
+          // With state, only a record with this resource's marker is changed. Without the marker,
+          // it may have been deleted and recreated in the web console; with another marker, it
+          // belongs to another resource. Taking it over is explicit.
+          if (owned !== "ours" && !adopting)
             return yield* refuse(
-              `${label} now carries the marker of ${decodeURIComponent(current.owner)}. Re-adopt it with --adopt, or leave it to its new owner.`,
+              `${label} ${owned === "unmarked" ? "has no marker of this resource, so it may have been recreated outside Alchemy" : `carries the marker of ${decodeURIComponent(current.marker?.path ?? "")}`}. Nothing was written. To manage it with this resource, add ${markerText(owner)} to its comment in the web console, or remove the resource from the stack for one deploy and declare it again with --adopt.`,
             );
-          if (adopting && current.owner !== owner) {
+          if (owned !== "ours") {
             const differences = adoptionDifferences(want, current);
             if (differences.length > 0)
               return yield* refuse(
@@ -673,8 +706,7 @@ export const RecordProvider = () =>
             current.value === want.value &&
             current.ttl === ttl &&
             current.disabled === want.disabled &&
-            current.comment === want.comment &&
-            current.owner === owner;
+            current.comments === markedComment(want.comment, owner);
           if (unchanged) return toAttributes(want.zone, current, want.type);
           yield* Technitium.zones.updateRecord({
             zone: want.zone,
@@ -701,15 +733,18 @@ export const RecordProvider = () =>
 
       return {
         stables: ["zone", "type"],
-        read: Effect.fn(function* ({ fqn, olds, output }) {
-          const owner = yield* currentOwner(fqn);
+        read: Effect.fn(function* ({ fqn, instanceId, olds, output }) {
+          const owner = yield* currentOwner(fqn, instanceId);
           const identity = output ?? (yield* validate(olds));
           const set = yield* observeName(identity.zone, identity.name);
           const record = yield* find(set, identity.type, owner, identity.value);
           if (record === undefined) return undefined;
           const attributes = toAttributes(identity.zone, record, identity.type);
-          // Without state, only a record with this resource's marker is known to be ours.
-          return output !== undefined || record.owner === owner ? attributes : Unowned(attributes);
+          // Without state, only a record with this resource's marker is known to be ours. With
+          // state, reconcile refuses to change a record without it.
+          return output !== undefined || ownership(record.marker, owner) === "ours"
+            ? attributes
+            : Unowned(attributes);
         }),
         diff: Effect.fn(function* ({ olds, news }) {
           // Values from other resources (an address, for example) are compared in reconcile.
@@ -724,8 +759,8 @@ export const RecordProvider = () =>
             ? { action: "noop" as const }
             : { action: "update" as const };
         }),
-        reconcile: Effect.fn(function* ({ fqn, news, olds, output }) {
-          const owner = yield* currentOwner(fqn);
+        reconcile: Effect.fn(function* ({ fqn, instanceId, news, olds, output }) {
+          const owner = yield* currentOwner(fqn, instanceId);
           const want = yield* validate(news);
           if (output !== undefined && (output.zone !== want.zone || output.type !== want.type))
             return yield* new TechnitiumRecordInvalid({
@@ -753,8 +788,8 @@ export const RecordProvider = () =>
             }),
           );
         }),
-        delete: Effect.fn(function* ({ fqn, output }) {
-          const owner = yield* currentOwner(fqn);
+        delete: Effect.fn(function* ({ fqn, instanceId, output }) {
+          const owner = yield* currentOwner(fqn, instanceId);
           yield* exclusive(
             output.zone,
             output.name,
@@ -765,12 +800,12 @@ export const RecordProvider = () =>
               if (set === "no-zone") return;
               const current = yield* find(set, output.type, owner, output.value);
               if (current === undefined) return;
-              if (current.owner !== owner)
+              if (ownership(current.marker, owner) !== "ours")
                 return yield* refuse(
                   `Technitium ${output.type} record "${output.name}" (${current.value}) does not carry this resource's marker, so it was not deleted. ` +
-                    (current.owner === undefined
+                    (current.marker === undefined
                       ? "It may have been recreated or edited outside Alchemy."
-                      : `It carries the marker of ${decodeURIComponent(current.owner)}.`),
+                      : `It carries the marker of ${decodeURIComponent(current.marker.path)}.`),
                 );
               if (output.type !== "CNAME")
                 yield* checkNoPtr(output.name, output.type, current.value);
@@ -783,7 +818,11 @@ export const RecordProvider = () =>
                   : { ipAddress: current.value, updateSvcbHints: false }),
               });
               const after = yield* observeName(output.zone, output.name);
-              if (after.records.some((r) => r.type === output.type && r.owner === owner))
+              if (
+                after.records.some(
+                  (r) => r.type === output.type && ownership(r.marker, owner) === "ours",
+                )
+              )
                 return yield* new TechnitiumRecordMismatch({
                   message: `Technitium ${output.type} record "${output.name}" still exists after the delete.`,
                 });

@@ -78,7 +78,7 @@ describe("examples", () => {
         value: "192.0.2.20",
         ttl: 300,
         disabled: false,
-        comments: "NAS [alchemy:Homelab/example/nas]",
+        comments: expect.stringMatching(/^NAS \[alchemy:Homelab\/example\/nas#[0-9a-f]{8}\]$/),
       },
     ]);
     expect(await recordsAt(ZONE, `files.${ZONE}`)).toMatchObject([
