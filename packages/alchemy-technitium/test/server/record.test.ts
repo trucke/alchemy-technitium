@@ -1,0 +1,401 @@
+// The Record resource through the real Alchemy plan and apply, against the test server.
+import * as RemovalPolicy from "alchemy/RemovalPolicy";
+import { renamedFrom } from "alchemy/Rename";
+import * as Effect from "effect/Effect";
+import { beforeEach, describe, expect, it } from "vitest";
+import * as Technitium from "../../src/index.ts";
+import { ZONES } from "./context.ts";
+import { clearZone, harness, marker, recordsAt, webConsole } from "./harness.ts";
+
+const ZONE = "example.test";
+const WWW = "www.example.test";
+
+const a = (
+  props: Partial<{
+    address: string;
+    ttl: number;
+    comment: string;
+    disabled: boolean;
+    name: string;
+  }> = {},
+) =>
+  Technitium.Record("www", {
+    zone: ZONE,
+    name: props.name ?? WWW,
+    type: "A",
+    address: props.address ?? "192.0.2.10",
+    ...(props.ttl === undefined ? {} : { ttl: props.ttl }),
+    ...(props.comment === undefined ? {} : { comment: props.comment }),
+    ...(props.disabled === undefined ? {} : { disabled: props.disabled }),
+  });
+
+/** A record added in the web console, outside Alchemy. */
+const addByHand = (params: Record<string, string | number | boolean>) =>
+  webConsole("/api/zones/records/add", { zone: ZONE, domain: WWW, ...params });
+
+beforeEach(() => clearZone(ZONE));
+
+describe("Technitium.Record", () => {
+  it("creates a marked record, then plans no change and writes nothing", async () => {
+    const serial = async () =>
+      (
+        await webConsole<{ zone: { soaSerial: number } }>("/api/zones/records/get", {
+          zone: ZONE,
+          domain: ZONE,
+        })
+      ).zone.soaSerial;
+    const before = await serial();
+    const stack = harness();
+    await stack.deploy(a({ ttl: 300, comment: "web server" }));
+    // A new serial makes secondary servers transfer the zone.
+    expect(await serial()).toBeGreaterThan(before);
+    expect(await recordsAt(ZONE, WWW)).toEqual([
+      {
+        type: "A",
+        value: "192.0.2.10",
+        ttl: 300,
+        disabled: false,
+        comments: `web server ${marker("www")}`,
+      },
+    ]);
+    expect(stack.writes).toEqual([`add ${WWW}`]);
+
+    const plan = await stack.plan(a({ ttl: 300, comment: "web server" }));
+    expect(plan.resources.www?.action).toBe("noop");
+    await stack.deploy(a({ ttl: 300, comment: "web server" }));
+    expect(stack.writes).toHaveLength(1);
+    expect((await stack.attributes()).www).toEqual({
+      zone: ZONE,
+      name: WWW,
+      type: "A",
+      value: "192.0.2.10",
+      ttl: 300,
+      comment: "web server",
+      disabled: false,
+    });
+  });
+
+  it("compares IPv6 addresses in canonical form", async () => {
+    const stack = harness();
+    const v6 = (address: string) =>
+      Technitium.Record("v6", { zone: ZONE, name: WWW, type: "AAAA", address });
+    await stack.deploy(v6("2001:DB8:0:0::10"));
+    expect((await recordsAt(ZONE, WWW))[0]?.value).toBe("2001:db8::10");
+    expect((await stack.plan(v6("2001:db8::10"))).resources.v6?.action).toBe("noop");
+  });
+
+  it("changes address, TTL, comment, disabled state and name in place", async () => {
+    const stack = harness();
+    await stack.deploy(a());
+    await stack.deploy(a({ address: "192.0.2.11", ttl: 60, comment: "moved", disabled: true }));
+    expect(await recordsAt(ZONE, WWW)).toEqual([
+      {
+        type: "A",
+        value: "192.0.2.11",
+        ttl: 60,
+        disabled: true,
+        comments: `moved ${marker("www")}`,
+      },
+    ]);
+    await stack.deploy(
+      a({
+        name: "web.example.test",
+        address: "192.0.2.11",
+        ttl: 60,
+        comment: "moved",
+        disabled: true,
+      }),
+    );
+    expect(await recordsAt(ZONE, WWW)).toEqual([]);
+    expect(await recordsAt(ZONE, "web.example.test")).toHaveLength(1);
+    expect(stack.writes).toEqual([`add ${WWW}`, `update ${WWW}`, `update ${WWW}`]);
+  });
+
+  it("finds a record that was already renamed when the state was not saved", async () => {
+    const stack = harness();
+    await stack.deploy(a({ ttl: 300 }));
+    // The same request a rename sends, without Alchemy recording it.
+    await webConsole("/api/zones/records/update", {
+      zone: ZONE,
+      domain: WWW,
+      newDomain: "web.example.test",
+      type: "A",
+      ipAddress: "192.0.2.10",
+      ttl: 300,
+      comments: marker("www"),
+    });
+    await stack.deploy(a({ name: "web.example.test", ttl: 300 }));
+    expect(stack.writes).toEqual([`add ${WWW}`]);
+    expect((await stack.attributes()).www).toMatchObject({ name: "web.example.test" });
+  });
+
+  it("follows a logical ID rename with renamedFrom", async () => {
+    const stack = harness();
+    await stack.deploy(a().pipe(RemovalPolicy.destroy()));
+    const renamed = Technitium.Record("web", {
+      zone: ZONE,
+      name: WWW,
+      type: "A",
+      address: "192.0.2.10",
+    }).pipe(renamedFrom("www"), RemovalPolicy.destroy());
+    // The state moves to the new ID, and the engine's update replaces the old marker.
+    await stack.deploy(renamed);
+    expect(await recordsAt(ZONE, WWW)).toMatchObject([{ comments: marker("web") }]);
+    await stack.destroy();
+    expect(await recordsAt(ZONE, WWW)).toEqual([]);
+    expect(stack.writes).toEqual([`add ${WWW}`, `update ${WWW}`, `delete ${WWW}`]);
+  });
+
+  it("passes another resource's output in the same plan", async () => {
+    const stack = harness();
+    const pair = (address: string) =>
+      Effect.gen(function* () {
+        const host = yield* Technitium.Record("host", {
+          zone: ZONE,
+          name: "host.example.test",
+          type: "A",
+          address,
+        });
+        yield* Technitium.Record("alias", {
+          zone: ZONE,
+          name: WWW,
+          type: "CNAME",
+          target: host.name,
+        });
+      });
+    await stack.deploy(pair("192.0.2.20"));
+    expect(await recordsAt(ZONE, WWW)).toMatchObject([
+      { type: "CNAME", value: "host.example.test" },
+    ]);
+    await stack.deploy(pair("192.0.2.21"));
+    expect(await recordsAt(ZONE, "host.example.test")).toMatchObject([{ value: "192.0.2.21" }]);
+    // The alias's target was unresolved at plan time; reconcile found nothing to write.
+    expect(stack.writes).toEqual([
+      "add host.example.test",
+      `add ${WWW}`,
+      "update host.example.test",
+    ]);
+  });
+
+  it("joins and changes a record set without touching the records it does not manage", async () => {
+    await addByHand({ type: "A", ipAddress: "192.0.2.99", ttl: 120, comments: "by hand" });
+    await webConsole("/api/zones/records/update", {
+      zone: ZONE,
+      domain: WWW,
+      type: "A",
+      ipAddress: "192.0.2.99",
+      ttl: 120,
+      comments: "by hand",
+      disable: true,
+    });
+    const unmanaged = {
+      type: "A",
+      value: "192.0.2.99",
+      ttl: 120,
+      disabled: true,
+      comments: "by hand",
+    };
+    const stack = harness();
+    // Without a TTL, the record takes the TTL of the set.
+    await stack.deploy(a());
+    await stack.deploy(a({ address: "192.0.2.12", comment: "managed" }));
+    expect(await recordsAt(ZONE, WWW)).toEqual([
+      {
+        type: "A",
+        value: "192.0.2.12",
+        ttl: 120,
+        disabled: false,
+        comments: `managed ${marker("www")}`,
+      },
+      unmanaged,
+    ]);
+    // A new TTL would apply to the unmanaged record too, and reset its comment and state.
+    const ttl = await stack.deployFailure(
+      a({ address: "192.0.2.12", comment: "managed", ttl: 600 }),
+    );
+    expect(ttl).toContain("TechnitiumRecordRefused");
+    // Changing the address to the unmanaged record's would merge the two.
+    const merge = await stack.deployFailure(a({ address: "192.0.2.99", comment: "managed" }));
+    expect(merge).toContain("would merge the two records");
+    expect(stack.writes).toEqual([`add ${WWW}`, `update ${WWW}`]);
+
+    await stack.deploy(
+      a({ address: "192.0.2.12", comment: "managed" }).pipe(RemovalPolicy.destroy()),
+    );
+    await stack.deploy(Effect.void);
+    expect(await recordsAt(ZONE, WWW)).toEqual([unmanaged]);
+  });
+
+  it("refuses records that cannot share a name", async () => {
+    await addByHand({ type: "CNAME", cname: "elsewhere.example.test" });
+    const stack = harness();
+    expect(await stack.deployFailure(a())).toContain("has a CNAME record");
+    await clearZone(ZONE);
+    await addByHand({ type: "A", ipAddress: "192.0.2.1" });
+    const alias = Technitium.Record("alias", {
+      zone: ZONE,
+      name: WWW,
+      type: "CNAME",
+      target: "x.example.test",
+    });
+    expect(await stack.deployFailure(alias)).toContain("cannot share its name");
+    expect(stack.writes).toEqual([]);
+  });
+
+  it("adopts an existing record only with --adopt, and adoption only adds the marker", async () => {
+    await addByHand({ type: "A", ipAddress: "192.0.2.10", ttl: 60, comments: "legacy" });
+    const stack = harness();
+    expect(await stack.deployFailure(a({ ttl: 60, comment: "legacy" }))).toContain(
+      "OwnedBySomeoneElse",
+    );
+    const changed = await stack.deployFailure(a({ ttl: 300, comment: "legacy" }), true);
+    expect(changed).toContain("ttl 60 (declared 300)");
+    expect(stack.writes).toEqual([]);
+    await stack.deploy(a({ ttl: 60, comment: "legacy" }), true);
+    expect(await recordsAt(ZONE, WWW)).toEqual([
+      {
+        type: "A",
+        value: "192.0.2.10",
+        ttl: 60,
+        disabled: false,
+        comments: `legacy ${marker("www")}`,
+      },
+    ]);
+    expect(stack.writes).toEqual([`update ${WWW}`]);
+  });
+
+  it("recovers lost state from the marker without --adopt and without writes", async () => {
+    const stack = harness();
+    await stack.deploy(a({ ttl: 300 }));
+    stack.loseState();
+    await stack.deploy(a({ ttl: 300 }));
+    expect(stack.writes).toEqual([`add ${WWW}`]);
+    expect((await stack.attributes()).www).toMatchObject({ value: "192.0.2.10", ttl: 300 });
+    // Another stack sees the marker of this one and needs --adopt.
+    expect(await harness({ stack: "other" }).deployFailure(a({ ttl: 300 }))).toContain(
+      "OwnedBySomeoneElse",
+    );
+  });
+
+  it("detects and repairs changes made in the web console", async () => {
+    const stack = harness();
+    await stack.deploy(a({ ttl: 300 }));
+    await webConsole("/api/zones/records/update", {
+      zone: ZONE,
+      domain: WWW,
+      type: "A",
+      ipAddress: "192.0.2.10",
+      newIpAddress: "192.0.2.50",
+      ttl: 300,
+      comments: marker("www"),
+    });
+    const detected = await stack.drift();
+    expect(Object.values(detected.resources)[0]).toMatchObject({
+      action: "drifted",
+      attr: { value: "192.0.2.50" },
+    });
+    await stack.drift(true);
+    expect(await recordsAt(ZONE, WWW)).toMatchObject([
+      { value: "192.0.2.10", comments: marker("www") },
+    ]);
+
+    await clearZone(ZONE);
+    expect(Object.values((await stack.drift()).resources)[0]?.action).toBe("missing");
+    await stack.drift(true);
+    expect(await recordsAt(ZONE, WWW)).toMatchObject([{ value: "192.0.2.10" }]);
+  });
+
+  it("keeps removed records unless their removal policy is destroy", async () => {
+    const stack = harness();
+    await stack.deploy(a());
+    await stack.deploy(Effect.void);
+    expect(await recordsAt(ZONE, WWW)).toHaveLength(1);
+
+    await clearZone(ZONE);
+    const destroyed = harness();
+    await destroyed.deploy(a().pipe(RemovalPolicy.destroy()));
+    await destroyed.destroy();
+    expect(await recordsAt(ZONE, WWW)).toEqual([]);
+    expect(destroyed.writes).toEqual([`add ${WWW}`, `delete ${WWW}`]);
+  });
+
+  it("deletes only a record that still carries its marker", async () => {
+    const stack = harness();
+    await stack.deploy(a().pipe(RemovalPolicy.destroy()));
+    await webConsole("/api/zones/records/update", {
+      zone: ZONE,
+      domain: WWW,
+      type: "A",
+      ipAddress: "192.0.2.10",
+      ttl: 3600,
+      comments: "someone else's now",
+    });
+    expect(await stack.destroyFailure()).toContain("does not carry this resource's marker");
+    expect(await recordsAt(ZONE, WWW)).toHaveLength(1);
+  });
+
+  it("never makes Technitium delete a PTR record", async () => {
+    const ptr = () =>
+      webConsole("/api/zones/records/add", {
+        zone: ZONES.reverse,
+        domain: "10.2.0.192.in-addr.arpa",
+        type: "PTR",
+        ptrName: WWW,
+      });
+    // Without permissions on the reverse zone, Technitium keeps the PTR record.
+    await ptr();
+    const unprivileged = harness();
+    await unprivileged.deploy(a().pipe(RemovalPolicy.destroy()));
+    await unprivileged.destroy();
+    expect(await recordsAt(ZONE, WWW)).toEqual([]);
+    expect(await recordsAt(ZONES.reverse, "10.2.0.192.in-addr.arpa")).toHaveLength(1);
+    await clearZone(ZONES.reverse);
+    // With Delete permission there, it would delete it, so the provider refuses.
+    await webConsole("/api/zones/permissions/set", {
+      zone: ZONES.reverse,
+      userPermissions: "alchemy|true|true|true",
+      groupPermissions: "Administrators|true|true|true",
+    });
+    await ptr();
+    try {
+      const stack = harness();
+      await stack.deploy(a().pipe(RemovalPolicy.destroy()));
+      expect(await stack.destroyFailure()).toContain(
+        "would also delete the PTR record 10.2.0.192.in-addr.arpa",
+      );
+      expect(await recordsAt(ZONES.reverse, "10.2.0.192.in-addr.arpa")).toHaveLength(1);
+      await clearZone(ZONES.reverse);
+      await stack.destroy();
+      expect(await recordsAt(ZONE, WWW)).toEqual([]);
+    } finally {
+      await clearZone(ZONES.reverse);
+      await webConsole("/api/zones/permissions/set", {
+        zone: ZONES.reverse,
+        groupPermissions: "Administrators|true|true|true",
+      });
+    }
+  });
+
+  it("refuses zones that do not exist or are not Primary", async () => {
+    const stack = harness();
+    const at = (zone: string, name: string) =>
+      Technitium.Record("www", { zone, name, type: "A", address: "192.0.2.10" });
+    // Technitium would fall back to the closest enclosing zone, example.test.
+    expect(await stack.planFailure(at("sub.example.test", "www.sub.example.test"))).toContain(
+      'zone "sub.example.test" does not exist',
+    );
+    expect(await stack.planFailure(at(ZONES.forwarder, `www.${ZONES.forwarder}`))).toContain(
+      "Forwarder zone",
+    );
+    expect(await stack.planFailure(at(ZONE, "www.other.test"))).toContain("is not inside zone");
+    expect(stack.writes).toEqual([]);
+  });
+
+  it("logs in through TECHNITIUM_API_TOKEN and TECHNITIUM_API_URL with the default providers", async () => {
+    const stack = harness({ login: true });
+    await stack.deploy(a().pipe(RemovalPolicy.destroy()));
+    expect(await recordsAt(ZONE, WWW)).toHaveLength(1);
+    await stack.destroy();
+    expect(await recordsAt(ZONE, WWW)).toEqual([]);
+  });
+});
