@@ -242,10 +242,14 @@ record itself.
 - **PTR records.** Adding and updating records can create PTR records and reverse zones (`ptr`,
   `createPtrZone`); the provider always sends `false`. Deleting an A or AAAA record also deletes a
   PTR record that points back at it whenever the token may delete in the reverse zone, and the API
-  offers no way to prevent it (`DeleteRecord` in `WebServiceZonesApi.cs`). Before deleting, the
-  provider looks up the PTR record and refuses the deletion if it finds one in a zone it can read.
-  A token without permissions on reverse zones avoids the case entirely; the server tests confirm
-  both.
+  offers no way to prevent it (`DeleteRecord` in `WebServiceZonesApi.cs`). Permissions are
+  separate flags, so a token can delete in a zone it cannot view, and no call tells a token its
+  own zone permissions (`zones/permissions/get` needs Modify on the Zones section). Before
+  deleting, the provider therefore reads the closest zone of the reverse name, as Technitium
+  does. It deletes only when no zone holds the name, when that zone is not a Primary or Forwarder
+  zone, or when it holds no PTR record that points at the name. It refuses when it finds one,
+  when it cannot read the zone and on any other error. The server tests cover a token with Delete
+  but not View on the reverse zone.
 - **SVCB and HTTPS hints.** `updateSvcbHints` is always `false`, so changing an address never
   changes other records.
 
@@ -253,7 +257,8 @@ record itself.
 
 `defaultRemovalPolicy` is `retain`, as for Proxmox guests: removing a record from the stack makes
 Alchemy forget it. With `RemovalPolicy.destroy()`, deletion requires the resource's marker and
-refuses a deletion that would remove a PTR record. A missing record or zone counts as deleted.
+refuses a deletion that could remove a PTR record or whose effect on PTR records it cannot check.
+A missing record or zone counts as deleted.
 
 The provider implements no `list`, so `alchemy unsafe nuke` deletes no records.
 

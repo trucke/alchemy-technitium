@@ -110,8 +110,8 @@ export default async function setup(project: TestProject) {
       forwarder: "this-server",
     });
 
-    // The provider's tests use a token with permissions on the managed zones only, as a real
-    // deployment should. Some tests grant it more for a single case.
+    // The provider's tests use a token with permissions on the managed zones and View on the
+    // reverse zone, as a real deployment should. Some tests change them for a single case.
     await admin("/api/admin/users/create", { user: SCOPED_USER, pass: secret() });
     for (const zone of [...ZONES.primary, ZONES.forwarder])
       await admin("/api/zones/permissions/set", {
@@ -119,6 +119,12 @@ export default async function setup(project: TestProject) {
         userPermissions: `${SCOPED_USER}|true|true|true`,
         groupPermissions: "Administrators|true|true|true|DNS Administrators|true|true|true",
       });
+    // View only on the reverse zone, so the provider can check for PTR records before it deletes.
+    await admin("/api/zones/permissions/set", {
+      zone: ZONES.reverse,
+      userPermissions: `${SCOPED_USER}|true|false|false`,
+      groupPermissions: "Administrators|true|true|true|DNS Administrators|true|true|true",
+    });
     const { token: scopedToken } = await admin("/api/admin/sessions/createToken", {
       user: SCOPED_USER,
       tokenName: "alchemy",

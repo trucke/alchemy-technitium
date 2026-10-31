@@ -85,10 +85,13 @@ A token has the permissions of its user. Give the provider a user of its own:
 3. Create an API token for the user: in the web console under Administration, or with the SDK's
    `admin.createApiToken`.
 
+For A and AAAA records that use `RemovalPolicy.destroy()`, also give the user View on the
+reverse zones of their addresses, and nothing more there. Before a deletion, the provider checks
+that Technitium would not delete a PTR record along with it, and refuses the deletion if it
+cannot read the reverse zone (see [Side effects](#side-effects)).
+
 The provider needs no permission on the Zones section and none on other zones; the server tests
-use exactly such a user. Do not give it permissions on reverse zones: Technitium deletes PTR
-records along with A and AAAA records only where the token may delete (see
-[Side effects](#side-effects)).
+use exactly such a user.
 
 Technitium adds every user to the `Everyone` group, which by default may view the dashboard,
 logs, cache and other sections, but no zone's records. Restrict that group if
@@ -166,8 +169,9 @@ A record with an automatic expiry (`expiryTtl`) is refused.
 
 - **PTR records:** the provider never asks Technitium to create or update PTR records or reverse
   zones. When an A or AAAA record is deleted, Technitium also deletes a PTR record that points back
-  at it, if the token may delete in the reverse zone; this cannot be turned off. The provider
-  refuses such a deletion. With a token that has no permissions on reverse zones, it never happens.
+  at it, if the token may delete in the reverse zone, even without permission to view it; this
+  cannot be turned off. The provider refuses the deletion if it finds such a PTR record, or if a
+  reverse zone exists that the token cannot read. Give the token View on the reverse zones.
 - **SVCB and HTTPS hints:** automatic address hints of SVCB and HTTPS records are not refreshed
   when an address changes.
 - **Secondary servers:** each write increases the zone's SOA serial, and Technitium notifies the
@@ -185,7 +189,8 @@ A record with an automatic expiry (`expiryTtl`) is refused.
   An edit in the web console in the moment between the read and the write can still be overwritten.
 - **Deletion:** `defaultRemovalPolicy` is `retain`: a record removed from the stack stays on the
   server and keeps its marker. With `RemovalPolicy.destroy()`, the provider deletes the record
-  only if it still carries the resource's marker and deleting it would not delete a PTR record.
+  only if it still carries the resource's marker and it can confirm that Technitium would not
+  delete a PTR record along with it.
   A record that is already gone, or whose zone is gone, counts as deleted.
 
 [docs/DESIGN.md](../../docs/DESIGN.md) explains these decisions, and

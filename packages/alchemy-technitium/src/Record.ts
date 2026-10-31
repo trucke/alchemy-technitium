@@ -516,31 +516,49 @@ export function reverseName(type: "A" | "AAAA", address: string): string {
 
 /**
  * Technitium deletes the PTR record that points back at a deleted A or AAAA record whenever the
- * token may delete in the reverse zone, and offers no way to turn this off. The provider refuses
- * such a deletion, so it never removes a record it does not manage.
+ * token may delete in the reverse zone, and offers no way to turn this off. A token can have
+ * Delete without View there, and no call tells a token its own zone permissions. So the provider
+ * deletes only when no zone holds the reverse name, or when it can read that zone and finds no
+ * such PTR record. Anything else is refused.
  */
-const checkNoPtr = (name: string, type: "A" | "AAAA", address: string) =>
-  Technitium.zones.getRecords({ domain: reverseName(type, address) }).pipe(
-    Effect.map((response) =>
-      response.zone?.type === "Primary" || response.zone?.type === "Forwarder"
-        ? (response.records ?? []).some(
-            (record) => record.type === "PTR" && normalizeName(record.rData.ptrName ?? "") === name,
-          ) && response.zone.name
-        : false,
-    ),
-    // No reverse zone, or none this token may read.
-    Effect.catchTags({
-      TechnitiumError: () => Effect.succeed(false),
-      Forbidden: () => Effect.succeed(false),
+const checkNoPtr = (name: string, type: "A" | "AAAA", address: string) => {
+  const ptr = reverseName(type, address);
+  const label = `Deleting ${type} record "${name}" (${address})`;
+  return Technitium.zones.getRecords({ domain: ptr }).pipe(
+    Effect.flatMap(({ zone, records = [] }) => {
+      if (zone === undefined)
+        return refuse(
+          `${label}: the reverse zone of ${ptr} could not be checked. Nothing was deleted.`,
+        );
+      // Technitium deletes PTR records only from Primary and Forwarder zones.
+      if (zone.type !== "Primary" && zone.type !== "Forwarder") return Effect.void;
+      const pointsBack = records.some(
+        (record) =>
+          record.type === "PTR" &&
+          normalizeName(record.name) === ptr &&
+          normalizeName(record.rData.ptrName ?? "") === name,
+      );
+      return pointsBack
+        ? refuse(
+            `${label} could also delete the PTR record ${ptr} in zone "${zone.name}", which Technitium does when the token may delete there. Delete the PTR record first. Nothing was deleted.`,
+          )
+        : Effect.void;
     }),
-    Effect.flatMap((zone) =>
-      zone === false
-        ? Effect.void
-        : refuse(
-            `Deleting ${type} record "${name}" (${address}) would also delete the PTR record ${reverseName(type, address)} in zone "${zone}", which Technitium does automatically. Delete the PTR record first, or remove the token's permissions on that zone.`,
-          ),
-    ),
+    Effect.catchTags({
+      TechnitiumError: (error) =>
+        // No zone holds the reverse name, so Technitium has nothing to delete.
+        error.message.startsWith("No such zone was found")
+          ? Effect.void
+          : refuse(
+              `${label}: the reverse zone of ${ptr} could not be checked (${error.message}). Nothing was deleted.`,
+            ),
+      Forbidden: () =>
+        refuse(
+          `${label}: the token cannot read the reverse zone that holds ${ptr}, so the provider cannot check whether Technitium would also delete a PTR record there. Give the token View permission on that zone. Nothing was deleted.`,
+        ),
+    }),
   );
+};
 
 // ---------------------------------------------------------------------------
 // Provider

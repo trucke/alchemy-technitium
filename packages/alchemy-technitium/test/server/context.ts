@@ -2,7 +2,7 @@
 export const ZONES = {
   /** Primary zones the scoped token may view, modify and delete in. */
   primary: ["example.test", "homelab.example.com"],
-  /** The reverse zone for 192.0.2.0/24. The scoped token has no permissions here. */
+  /** The reverse zone for 192.0.2.0/24. The scoped token may only view it. */
   reverse: "2.0.192.in-addr.arpa",
   /** A conditional forwarder zone, which the provider must refuse. */
   forwarder: "forward.test",

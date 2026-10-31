@@ -31,8 +31,9 @@ The setup in `packages/alchemy-technitium/test/server/globalSetup.ts`:
 2. Creates an admin token, the Primary zones `example.test` and `homelab.example.com`, the reverse
    zone `2.0.192.in-addr.arpa` and the conditional forwarder zone `forward.test`.
 3. Creates the user `alchemy` with View, Modify and Delete on the two Primary zones and on
-   `forward.test`, and an API token for it. The provider uses this token, as a real deployment
-   should; the admin token stands in for someone using the web console.
+   `forward.test`, View on the reverse zone, and an API token for it. The provider uses this
+   token, as a real deployment should; the admin token stands in for someone using the web
+   console.
 
 The container and its files under `.local/test-server/` are removed when the run ends, also after
 a failure.

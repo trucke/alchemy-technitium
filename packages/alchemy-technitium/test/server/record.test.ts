@@ -376,45 +376,38 @@ describe("Technitium.Record", () => {
     expect(stack.writes).toEqual([`add ${WWW}`]);
   });
 
-  it("never makes Technitium delete a PTR record", async () => {
-    const ptr = () =>
-      webConsole("/api/zones/records/add", {
+  it("deletes an address record only when it can check that Technitium keeps the PTR records", async () => {
+    const ptrName = "10.2.0.192.in-addr.arpa";
+    const reversePermissions = (userPermissions: string) =>
+      webConsole("/api/zones/permissions/set", {
         zone: ZONES.reverse,
-        domain: "10.2.0.192.in-addr.arpa",
-        type: "PTR",
-        ptrName: WWW,
+        userPermissions,
+        groupPermissions: "Administrators|true|true|true",
       });
-    // Without permissions on the reverse zone, Technitium keeps the PTR record.
-    await ptr();
-    const unprivileged = harness();
-    await unprivileged.deploy(a().pipe(RemovalPolicy.destroy()));
-    await unprivileged.destroy();
-    expect(await recordsAt(ZONE, WWW)).toEqual([]);
-    expect(await recordsAt(ZONES.reverse, "10.2.0.192.in-addr.arpa")).toHaveLength(1);
-    await clearZone(ZONES.reverse);
-    // With Delete permission there, it would delete it, so the provider refuses.
-    await webConsole("/api/zones/permissions/set", {
+    await webConsole("/api/zones/records/add", {
       zone: ZONES.reverse,
-      userPermissions: "alchemy|true|true|true",
-      groupPermissions: "Administrators|true|true|true",
+      domain: ptrName,
+      type: "PTR",
+      ptrName: WWW,
     });
-    await ptr();
     try {
       const stack = harness();
       await stack.deploy(a().pipe(RemovalPolicy.destroy()));
-      expect(await stack.destroyFailure()).toContain(
-        "would also delete the PTR record 10.2.0.192.in-addr.arpa",
-      );
-      expect(await recordsAt(ZONES.reverse, "10.2.0.192.in-addr.arpa")).toHaveLength(1);
+      // Delete without View: Technitium would delete the PTR record the provider cannot see.
+      await reversePermissions("alchemy|false|false|true");
+      expect(await stack.destroyFailure()).toContain("cannot read the reverse zone");
+      // View: the provider sees the PTR record and refuses.
+      await reversePermissions("alchemy|true|false|false");
+      expect(await stack.destroyFailure()).toContain(`PTR record ${ptrName}`);
+      expect(await recordsAt(ZONES.reverse, ptrName)).toHaveLength(1);
+      expect(await recordsAt(ZONE, WWW)).toHaveLength(1);
+      // Without a PTR record, the deletion goes ahead.
       await clearZone(ZONES.reverse);
       await stack.destroy();
       expect(await recordsAt(ZONE, WWW)).toEqual([]);
     } finally {
       await clearZone(ZONES.reverse);
-      await webConsole("/api/zones/permissions/set", {
-        zone: ZONES.reverse,
-        groupPermissions: "Administrators|true|true|true",
-      });
+      await reversePermissions("alchemy|true|false|false");
     }
   });
 

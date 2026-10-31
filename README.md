@@ -98,8 +98,8 @@ reachable over HTTPS, or over HTTP on a loopback address (for example through an
   leaves it on the server. Deleting needs an explicit `RemovalPolicy.destroy()`, and the provider
   deletes only records that still carry the resource's marker.
 - **No side effects.** The provider never creates zones, never creates or changes PTR records
-  and never refreshes SVCB or HTTPS hints. It refuses a deletion that would make Technitium
-  delete a PTR record.
+  and never refreshes SVCB or HTTPS hints. It refuses a deletion that could make Technitium
+  delete a PTR record, including one it cannot check.
 - **The token stays secret.** It travels in the `Authorization` header over HTTPS, and never
   appears in URLs, state, logs or errors.
 
