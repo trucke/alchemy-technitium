@@ -3,8 +3,8 @@
 // container and its files are removed when the run ends. Nothing here can reach a real server.
 import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { chmodSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { chmodSync, mkdirSync, rmdirSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import type { TestProject } from "vitest/node";
 import { ZONES, SCOPED_USER } from "./context.ts";
 
@@ -47,6 +47,10 @@ export default async function setup(project: TestProject) {
       podman("rm", "--force", "--time", "0", NAME);
     } finally {
       rmSync(DIR, { recursive: true, force: true });
+      // The shared parent folder goes too once no other run uses it.
+      try {
+        rmdirSync(dirname(DIR));
+      } catch {}
     }
   };
   try {

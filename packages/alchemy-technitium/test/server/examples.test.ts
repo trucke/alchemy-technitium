@@ -3,12 +3,13 @@
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { afterAll, beforeEach, describe, expect, it, inject } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, inject } from "vitest";
 import { clearZone, recordsAt, webConsole } from "./harness.ts";
 
 const ZONE = "homelab.example.com";
 const PACKAGES = join(import.meta.dirname, "../../..");
-const scratch = mkdtempSync(join(PACKAGES, "../.local/examples-"));
+/** Created before the first test, so a run that skips every test here leaves nothing behind. */
+let scratch = "";
 
 /** Runs a command with the test server's login and returns its exit code and output. */
 function run(command: string, args: string[]) {
@@ -46,6 +47,9 @@ const alchemy = (command: "deploy" | "plan" | "destroy") =>
     ...(command === "plan" ? [] : ["--yes"]),
   ]);
 
+beforeAll(() => {
+  scratch = mkdtempSync(join(PACKAGES, "../.local/examples-"));
+});
 beforeEach(() => clearZone(ZONE));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
