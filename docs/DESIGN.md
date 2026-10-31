@@ -276,10 +276,11 @@ The client follows distilled's requirements for a new SDK, checked against the d
 
 As with Proxmox and NetBird, there are two copies of the client. This repository holds the one
 that projects install, built with the published `@distilled.cloud/core` 1.0.0-rc.17. A second
-copy, fitted into the distilled repository, is ready for a pull request
-([alchemy-run/distilled#990](https://github.com/alchemy-run/distilled/pull/990) for Proxmox and
-[#1024](https://github.com/alchemy-run/distilled/pull/1024) for NetBird are the precedents). It
-differs where distilled's repository differs:
+copy, fitted into the distilled repository, is the draft pull request
+[alchemy-run/distilled#1026](https://github.com/alchemy-run/distilled/pull/1026), as
+[#990](https://github.com/alchemy-run/distilled/pull/990) is for Proxmox and
+[#1024](https://github.com/alchemy-run/distilled/pull/1024) for NetBird. It differs where
+distilled's repository differs:
 
 - The fetch script is `stacks/distilled-submodules/spec-repos/technitium/fetch-specs.ts`. Only that
   file reaches the spec mirror, so it contains the extraction and writes `api-structure.json` and
@@ -291,8 +292,8 @@ differs where distilled's repository differs:
   stay in this repository.
 
 The distilled copy passes `pnpm specs:check`, `tsrs --noCheck false` and core's checks for every
-SDK, and its README example ran against a local Technitium server. It has not been pushed. The
-license question the Proxmox pull request asks applies to it too.
+SDK, and its README example ran against a local Technitium server. Its description asks the same
+license question as the Proxmox pull request.
 
 ## Open questions
 
