@@ -1,0 +1,7 @@
+packages:
+  - packages/*
+
+# Keeps every Effect package at 4.0.5; @effect/platform-node 4.0.5 would otherwise pull a
+# platform-node-shared release that expects a newer Effect.
+overrides:
+  "@effect/platform-node-shared": "4.0.5"

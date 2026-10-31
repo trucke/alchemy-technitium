@@ -1,0 +1,8 @@
+{
+  "ignorePatterns": [
+    ".local/**",
+    "packages/*/lib/**",
+    "packages/technitium/specs/**",
+    "pnpm-lock.yaml"
+  ]
+}

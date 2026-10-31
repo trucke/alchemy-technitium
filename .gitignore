@@ -1,0 +1,15 @@
+node_modules/
+.alchemy/
+# Build output and the release tarballs from `pnpm release:pack`.
+packages/*/lib/
+release/
+# Copied from the repository root when a package is packed.
+packages/*/LICENSE
+packages/*/NOTICE
+# Written by `pnpm convert`; never committed.
+packages/technitium/.generated-specs/
+# Technitium's documentation and source files, downloaded by `pnpm specs:fetch`. They are
+# GPL-3.0 text and never committed; see docs/DESIGN.md#technitium-text.
+packages/technitium/specs/.cache/
+# Local notes, scratch files and test server data.
+.local/

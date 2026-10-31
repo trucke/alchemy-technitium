@@ -1,0 +1,31 @@
+{
+  "name": "alchemy-technitium",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:server": "vitest run --config vitest.server.config.ts",
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "specs:fetch": "pnpm --filter @distilled.cloud/technitium specs:fetch",
+    "convert": "pnpm --filter @distilled.cloud/technitium convert",
+    "generate": "pnpm --filter @distilled.cloud/technitium generate && pnpm format && pnpm check:prose",
+    "check:prose": "pnpm --filter @distilled.cloud/technitium check:prose",
+    "release:pack": "rm -rf release && pnpm -r pack --pack-destination release"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "oxfmt": "0.72.0",
+    "oxlint": "1.87.0",
+    "typescript": "7.0.2",
+    "vitest": "5.0.4"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@12.15.0"
+}

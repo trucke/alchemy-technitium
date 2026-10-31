@@ -1,0 +1,52 @@
+{
+  "name": "@distilled.cloud/technitium",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Effect-native Technitium DNS Server SDK, generated from Technitium's API documentation and server source",
+  "license": "Apache-2.0",
+  "files": [
+    "lib",
+    "NOTICE"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./lib/index.d.ts",
+        "default": "./lib/index.js"
+      },
+      "./*": {
+        "types": "./lib/*.d.ts",
+        "default": "./lib/*.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "rm -rf lib && tsc -p tsconfig.build.json",
+    "prepack": "pnpm build && cp ../../LICENSE ../../NOTICE .",
+    "specs:fetch": "node scripts/fetch-specs.ts",
+    "convert": "node scripts/convert.ts",
+    "generate": "node scripts/convert.ts && node scripts/generate.ts",
+    "check:prose": "node scripts/check-prose.ts"
+  },
+  "dependencies": {
+    "@distilled.cloud/core": "1.0.0-rc.17"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "4.0.5",
+    "effect": "4.0.5",
+    "rolldown": "1.2.13"
+  },
+  "peerDependencies": {
+    "effect": "^4.0.5"
+  },
+  "distilled": {
+    "generatedAt": "2026-10-31",
+    "specUpdatedAt": "2026-10-31"
+  }
+}

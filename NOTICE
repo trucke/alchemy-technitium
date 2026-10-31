@@ -1,0 +1,10 @@
+alchemy-technitium
+Copyright 2026 sudokvn
+
+The Technitium DNS Server API client in packages/technitium is generated from the structure of
+Technitium DNS Server's API documentation (APIDOCS.md) and the request handlers in its server
+source (DnsServerCore), release v15.5.0 (Copyright Shreyas Zare, GPL-3.0). This
+repository contains only structural interface information derived from them: paths, permission
+names, parameter and member names, types, enum values and section headings. It contains no
+Technitium documentation text and no Technitium source code. The documentation and source files
+are downloaded and verified at build time and are not redistributed.
