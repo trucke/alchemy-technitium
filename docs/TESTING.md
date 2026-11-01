@@ -12,7 +12,8 @@
   the READMEs are the example files the server tests run.
 
 `pnpm test:server` runs the Record resource through the real Alchemy plan and apply against a
-Technitium DNS Server that exists only for the run. It never contacts another server.
+Technitium DNS Server that exists only for the run, and reads whole zones through the client. It
+never contacts another server.
 
 ## Run the server tests
 
@@ -40,10 +41,17 @@ a failure.
 
 The tests run with distilled's strict response validation, so every response the provider reads
 must match the generated model. They record every record write the provider sends, so they can
-prove that an unchanged deploy writes nothing and a refused change writes nothing either. Two
-tests run the documented
-examples: the SDK program with Node, and the stack with the Alchemy CLI (`deploy`, `plan` and
-`destroy`), both logged in through `TECHNITIUM_API_URL` and `TECHNITIUM_API_TOKEN`.
+prove that an unchanged deploy writes nothing and a refused change writes nothing either.
+
+`sdk.test.ts` checks the record model of the client. It creates its own zones with the admin
+token: a Primary zone with a record of each type the API can add (except APP, which needs an
+installed DNS app), two zones signed with NSEC and NSEC3, and a conditional forwarder zone with an
+HTTP proxy. It reads each whole zone with strict response validation, and adds and updates
+records in the Primary zone.
+
+Two tests run the documented examples: the SDK program with Node, and the stack with the Alchemy
+CLI (`deploy`, `plan` and `destroy`), both logged in through `TECHNITIUM_API_URL` and
+`TECHNITIUM_API_TOKEN`.
 
 To test another Technitium release, set `TECHNITIUM_TEST_IMAGE`, for example:
 

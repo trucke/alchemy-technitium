@@ -1,5 +1,5 @@
 {
-  "description": "Authoritative records carry more members than the examples in APIDOCS.md show. WriteRecordAsJson in DnsServerCore/WebServiceZonesApi.cs (v15.5.0) writes name, type, ttl, ttlString, disabled, rData, dnssecStatus, lastUsedOn, lastModified, expiryTtl and expiryTtlString for every record of records/get, records/add and records/update, plus comments when set and nameIdn for internationalized names. Confirmed with strict response validation of records/get, records/add and records/update against Technitium 15.5.0, 15.5.1 and 15.6.2 containers on 2026-10-31. The rData examples of records/add (an A record) and records/update (an SOA record) each show one record type; both use the rData shape of records/get, which its example builds from all record types, because WriteRecordAsJson writes rData the same way for all three calls. The records/get example contains no PTR record, so its rData shape lacks ptrName, which WriteRecordAsJson writes for PTR records.",
+  "description": "Authoritative records carry more members than the examples in APIDOCS.md show. WriteRecordAsJson in DnsServerCore/WebServiceZonesApi.cs (v15.5.0) writes name, type, ttl, ttlString, disabled, rData, dnssecStatus, lastUsedOn, lastModified, expiryTtl and expiryTtlString for every record of records/get, records/add and records/update, plus comments when set, nameIdn for internationalized names and glueRecords for NS records with glue addresses. Confirmed with strict response validation of records/get, records/add and records/update against Technitium 15.5.0, 15.5.1 and 15.6.2 containers on 2026-10-31, and for glueRecords against 15.5.0 on 2026-11-01. The rData examples of records/add (an A record) and records/update (an SOA record) each show one record type; both use the rData shape of records/get (see record-data.patch.json), because WriteRecordAsJson writes rData the same way for all three calls.",
   "patches": [
     {
       "op": "add",
@@ -370,9 +370,33 @@
     },
     {
       "op": "add",
-      "path": "/shapes/technitium.zones#GetRecordsResponseRecordsItemRData/members/ptrName",
+      "path": "/shapes/technitium.zones#GetRecordsResponseRecordsItemGlueRecords",
       "value": {
-        "target": "smithy.api#String"
+        "type": "list",
+        "member": {
+          "target": "smithy.api#String"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/technitium.zones#GetRecordsResponseRecordsItem/members/glueRecords",
+      "value": {
+        "target": "technitium.zones#GetRecordsResponseRecordsItemGlueRecords"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/technitium.zones#AddRecordResponseAddedRecord/members/glueRecords",
+      "value": {
+        "target": "technitium.zones#GetRecordsResponseRecordsItemGlueRecords"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/technitium.zones#UpdateRecordResponseUpdatedRecord/members/glueRecords",
+      "value": {
+        "target": "technitium.zones#GetRecordsResponseRecordsItemGlueRecords"
       }
     }
   ]

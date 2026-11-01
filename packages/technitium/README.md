@@ -99,6 +99,8 @@ boolean has that type, and enum values come from the documentation.
 Response types come from the documentation's example responses. Their members are optional unless
 a [patch](#develop-and-regenerate) marks them required after checking the server source, as for
 the records and zone summaries of `zones.getRecords`, `zones.addRecord` and `zones.updateRecord`.
+The record data (`rData`) of these calls has the members of every record type the server writes,
+all optional. `flags` and `protocol` are a string or a number, depending on the record type.
 Responses are not validated by default. To check them, provide distilled's
 `ResponseValidation.strict` or `ResponseValidation.additionalProperties` layer from
 `@distilled.cloud/core`; a mismatch then fails with `TechnitiumParseError`.
@@ -137,7 +139,8 @@ neither the token nor a password can reach a log.
 - Operations are not retried, because replaying a write could apply it twice.
 - Only the operations of the Alchemy provider (`zones.getRecords`, `addRecord`, `updateRecord` and
   `deleteRecord`) are tested against a server. Their responses pass strict validation on
-  Technitium 15.5.0, 15.5.1 and 15.6.2.
+  Technitium 15.5.0, 15.5.1 and 15.6.2, including whole zones with every record type except APP
+  and ALIAS, signed zones and conditional forwarder zones.
 
 ## Develop and regenerate
 

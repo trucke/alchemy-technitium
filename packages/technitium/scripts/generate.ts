@@ -10,6 +10,9 @@ const spec: SdkSpec = {
   sourceNote: "specs/api-structure.json",
   // Set by patches where Technitium writes an explicit null.
   nullableTrait: "technitium.api#nullable",
+  // Record data members whose type depends on the record type, such as `flags` (see
+  // patches/zones/record-data.patch.json), are unions of primitives.
+  unionStyle: "primitive",
   // Secrets arrive as Redacted values; inputs accept a string or a Redacted value.
   memberTraitPipes: { [SENSITIVE_TRAIT]: "T.SensitiveValue" },
   memberTsType: (member) =>

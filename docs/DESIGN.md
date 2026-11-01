@@ -100,17 +100,25 @@ files exactly.
 
 ### Patches
 
-The examples in `APIDOCS.md` predate some members the server writes. Two patches in
-`patches/zones/` correct the shapes the provider reads, each with its evidence in `description`:
+The examples in `APIDOCS.md` predate some members the server writes and show only some record
+types. Three patches in `patches/zones/` correct the shapes of records and zones, each with its
+evidence in `description`:
 
+- `record-data.patch.json`: `rData` has the members of every record type that `WriteRecordAsJson`
+  in `WebServiceZonesApi.cs` writes, such as the `*String` intervals of SOA records and the
+  character strings of TXT records. Two members change type with the record type, so they are
+  unions of primitives (`unionStyle: "primitive"`, as in distilled's Fly.io SDK): `flags` is a
+  number for CAA records and a string otherwise, and `protocol` is a string for FWD records and a
+  number for DNSKEY records.
 - `record-members.patch.json`: records in `getRecords`, `addRecord` and `updateRecord` have
-  `comments`, `expiryTtl`, `lastModified` and further members (`WriteRecordAsJson` in
-  `WebServiceZonesApi.cs`), and all three use the full `rData` shape.
+  `comments`, `expiryTtl`, `lastModified`, `glueRecords` and further members, and all three use
+  the `rData` shape of `getRecords`.
 - `zone-summary.patch.json`: the zone summary in the same responses (`WriteZoneInfoAsJson`), where
   `catalog` is `null` for zones outside a catalog zone.
 
 The server tests run these operations with strict response validation, which fails on any member
-the model lacks. Removing a patched member makes them fail.
+the model lacks, and read whole zones with every record type except APP and ALIAS. Removing a
+patched member makes them fail.
 
 ### Protocol
 

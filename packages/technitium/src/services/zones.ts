@@ -150,7 +150,20 @@ export interface GetRecordsResponseRecordsItemRDataComputedDigestsItem {
 }
 export type GetRecordsResponseRecordsItemRDataComputedDigests =
   Array<GetRecordsResponseRecordsItemRDataComputedDigestsItem>;
+export type GetRecordsResponseRecordsItemRDataFlags = string | number;
+export type GetRecordsResponseRecordsItemRDataProtocol = number | string;
 export type GetRecordsResponseRecordsItemRDataTypes = Array<string>;
+export type GetRecordsResponseRecordsItemRDataCharacterStrings = Array<string>;
+export type GetRecordsResponseRecordsItemRDataCharacterStringsBase64 = Array<string>;
+export interface GetRecordsResponseRecordsItemRDataAddressPrefixesItem {
+  addressFamily: string;
+  prefix: number;
+  negation: boolean;
+  afdPart: string;
+}
+export type GetRecordsResponseRecordsItemRDataAddressPrefixes =
+  Array<GetRecordsResponseRecordsItemRDataAddressPrefixesItem>;
+export type GetRecordsResponseRecordsItemRDataSvcParams = { [key: string]: string | undefined };
 export interface GetRecordsResponseRecordsItemRData {
   algorithm?: string;
   cname?: string;
@@ -161,7 +174,7 @@ export interface GetRecordsResponseRecordsItemRData {
   dnsKeyState?: string;
   dnsKeyStateReadyBy?: string;
   expire?: number;
-  flags?: string;
+  flags?: GetRecordsResponseRecordsItemRDataFlags;
   hashAlgorithm?: string;
   ipAddress?: string;
   iterations?: number;
@@ -172,7 +185,7 @@ export interface GetRecordsResponseRecordsItemRData {
   nextHashedOwnerName?: string;
   originalTtl?: number;
   primaryNameServer?: string;
-  protocol?: number;
+  protocol?: GetRecordsResponseRecordsItemRDataProtocol;
   publicKey?: string;
   refresh?: number;
   responsiblePerson?: string;
@@ -185,8 +198,76 @@ export interface GetRecordsResponseRecordsItemRData {
   signersName?: string;
   typeCovered?: string;
   types?: GetRecordsResponseRecordsItemRDataTypes;
+  dataType?: string;
+  data?: string;
+  nameServerIdn?: string;
+  cnameIdn?: string;
+  primaryNameServerIdn?: string;
+  refreshString?: string;
+  retryString?: string;
+  expireString?: string;
+  minimumString?: string;
+  useSerialDateScheme?: boolean;
   ptrName?: string;
+  ptrNameIdn?: string;
+  preference?: number;
+  exchange?: string;
+  exchangeIdn?: string;
+  text?: string;
+  splitText?: boolean;
+  characterStrings?: GetRecordsResponseRecordsItemRDataCharacterStrings;
+  characterStringsBase64?: GetRecordsResponseRecordsItemRDataCharacterStringsBase64;
+  mailbox?: string;
+  txtDomain?: string;
+  txtDomainIdn?: string;
+  priority?: number;
+  weight?: number;
+  port?: number;
+  target?: string;
+  targetIdn?: string;
+  order?: number;
+  services?: string;
+  regexp?: string;
+  replacement?: string;
+  replacementIdn?: string;
+  dname?: string;
+  dnameIdn?: string;
+  addressPrefixes?: GetRecordsResponseRecordsItemRDataAddressPrefixes;
+  algorithmNumber?: number;
+  digestTypeNumber?: number;
+  fingerprintType?: string;
+  fingerprint?: string;
+  nextDomainName?: string;
+  dnsKeyStateActiveBy?: string;
+  certificateUsage?: string;
+  selector?: string;
+  matchingType?: string;
+  certificateAssociationData?: string;
+  scheme?: string;
+  svcPriority?: number;
+  svcTargetName?: string;
+  svcParams?: GetRecordsResponseRecordsItemRDataSvcParams;
+  autoIpv4Hint?: boolean;
+  autoIpv6Hint?: boolean;
+  uri?: string;
+  tag?: string;
+  value?: string;
+  aname?: string;
+  anameIdn?: string;
+  forwarder?: string;
+  dnssecValidation?: boolean;
+  proxyType?: string;
+  proxyAddress?: string;
+  proxyPort?: number;
+  proxyUsername?: string;
+  proxyPassword?: Redacted.Redacted<string>;
+  appName?: string;
+  classPath?: string;
+  type?: string;
+  alias?: string;
+  aliasIdn?: string;
 }
+export type GetRecordsResponseRecordsItemGlueRecords = Array<string>;
 export interface AddRecordResponseAddedRecord {
   disabled: boolean;
   dnssecStatus: string;
@@ -201,6 +282,7 @@ export interface AddRecordResponseAddedRecord {
   lastModified: string;
   nameIdn?: string;
   ttlString: string;
+  glueRecords?: GetRecordsResponseRecordsItemGlueRecords;
 }
 export type ZoneNotifyFailedFor = Array<string>;
 export interface AddRecordResponseZone {
@@ -814,7 +896,7 @@ export const addPrivateKey: API.OperationMethod<
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
   input: __S(0, __c0, 0) as any as S.Schema<AddPrivateKeyRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<AddPrivateKeyResponse>,
+  output: __S(8, __c1, 0) as any as S.Schema<AddPrivateKeyResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -827,8 +909,8 @@ export const addRecord: API.OperationMethod<
   AddRecordError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(8, __c2, 0) as any as S.Schema<AddRecordRequest>,
-  output: __S(9, __c2, 1) as any as S.Schema<AddRecordResponse>,
+  input: __S(16, __c2, 0) as any as S.Schema<AddRecordRequest>,
+  output: __S(17, __c2, 1) as any as S.Schema<AddRecordResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -841,8 +923,8 @@ export const cloneZone: API.OperationMethod<
   CloneZoneError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(72, __c18, 0) as any as S.Schema<CloneZoneRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<CloneZoneResponse>,
+  input: __S(152, __c19, 0) as any as S.Schema<CloneZoneRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<CloneZoneResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -855,8 +937,8 @@ export const convertToNsec: API.OperationMethod<
   ConvertToNsecError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(116, __c29, 0) as any as S.Schema<ConvertToNsecRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<ConvertToNsecResponse>,
+  input: __S(240, __c30, 0) as any as S.Schema<ConvertToNsecRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<ConvertToNsecResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -869,8 +951,8 @@ export const convertToNsec3: API.OperationMethod<
   ConvertToNsec3Error,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(124, __c31, 0) as any as S.Schema<ConvertToNsec3Request>,
-  output: __S(4, __c1, 0) as any as S.Schema<ConvertToNsec3Response>,
+  input: __S(256, __c32, 0) as any as S.Schema<ConvertToNsec3Request>,
+  output: __S(8, __c1, 0) as any as S.Schema<ConvertToNsec3Response>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -883,8 +965,8 @@ export const convertZoneType: API.OperationMethod<
   ConvertZoneTypeError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(128, __c32, 0) as any as S.Schema<ConvertZoneTypeRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<ConvertZoneTypeResponse>,
+  input: __S(264, __c33, 0) as any as S.Schema<ConvertZoneTypeRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<ConvertZoneTypeResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -897,8 +979,8 @@ export const createZone: API.OperationMethod<
   CreateZoneError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(132, __c33, 0) as any as S.Schema<CreateZoneRequest>,
-  output: __S(133, __c33, 1) as any as S.Schema<CreateZoneResponse>,
+  input: __S(272, __c34, 0) as any as S.Schema<CreateZoneRequest>,
+  output: __S(273, __c34, 1) as any as S.Schema<CreateZoneResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -911,8 +993,8 @@ export const deletePrivateKey: API.OperationMethod<
   DeletePrivateKeyError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(136, __c34, 0) as any as S.Schema<DeletePrivateKeyRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<DeletePrivateKeyResponse>,
+  input: __S(280, __c35, 0) as any as S.Schema<DeletePrivateKeyRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<DeletePrivateKeyResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -925,8 +1007,8 @@ export const deleteRecord: API.OperationMethod<
   DeleteRecordError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(140, __c35, 0) as any as S.Schema<DeleteRecordRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<DeleteRecordResponse>,
+  input: __S(288, __c36, 0) as any as S.Schema<DeleteRecordRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<DeleteRecordResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -939,8 +1021,8 @@ export const deleteZone: API.OperationMethod<
   DeleteZoneError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(144, __c36, 0) as any as S.Schema<DeleteZoneRequest>,
-  output: __S(146, __c36, 2) as any as S.Schema<DeleteZoneResponse>,
+  input: __S(296, __c37, 0) as any as S.Schema<DeleteZoneRequest>,
+  output: __S(297, __c37, 1) as any as S.Schema<DeleteZoneResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -953,8 +1035,8 @@ export const disableZone: API.OperationMethod<
   DisableZoneError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(24, __c6, 0) as any as S.Schema<DisableZoneRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<DisableZoneResponse>,
+  input: __S(56, __c7, 0) as any as S.Schema<DisableZoneRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<DisableZoneResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -967,8 +1049,8 @@ export const enableZone: API.OperationMethod<
   EnableZoneError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(28, __c7, 0) as any as S.Schema<EnableZoneRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<EnableZoneResponse>,
+  input: __S(64, __c8, 0) as any as S.Schema<EnableZoneRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<EnableZoneResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -981,8 +1063,8 @@ export const getDnssecProperties: API.OperationMethod<
   GetDnssecPropertiesError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(32, __c8, 0) as any as S.Schema<GetDnssecPropertiesRequest>,
-  output: __S(35, __c8, 3) as any as S.Schema<GetDnssecPropertiesResponse>,
+  input: __S(72, __c9, 0) as any as S.Schema<GetDnssecPropertiesRequest>,
+  output: __S(75, __c9, 3) as any as S.Schema<GetDnssecPropertiesResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -995,8 +1077,8 @@ export const getDsInfo: API.OperationMethod<
   GetDsInfoError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(36, __c9, 0) as any as S.Schema<GetDsInfoRequest>,
-  output: __S(39, __c9, 3) as any as S.Schema<GetDsInfoResponse>,
+  input: __S(80, __c10, 0) as any as S.Schema<GetDsInfoRequest>,
+  output: __S(83, __c10, 3) as any as S.Schema<GetDsInfoResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1009,8 +1091,8 @@ export const getRecords: API.OperationMethod<
   GetRecordsError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(40, __c10, 0) as any as S.Schema<GetRecordsRequest>,
-  output: __S(42, __c10, 2) as any as S.Schema<GetRecordsResponse>,
+  input: __S(88, __c11, 0) as any as S.Schema<GetRecordsRequest>,
+  output: __S(90, __c11, 2) as any as S.Schema<GetRecordsResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1023,8 +1105,8 @@ export const getZoneOptions: API.OperationMethod<
   GetZoneOptionsError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(44, __c11, 0) as any as S.Schema<GetZoneOptionsRequest>,
-  output: __S(47, __c11, 3) as any as S.Schema<GetZoneOptionsResponse>,
+  input: __S(96, __c12, 0) as any as S.Schema<GetZoneOptionsRequest>,
+  output: __S(99, __c12, 3) as any as S.Schema<GetZoneOptionsResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1037,8 +1119,8 @@ export const getZonePermissions: API.OperationMethod<
   GetZonePermissionsError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(52, __c13, 0) as any as S.Schema<GetZonePermissionsRequest>,
-  output: __S(53, __c13, 1) as any as S.Schema<GetZonePermissionsResponse>,
+  input: __S(112, __c14, 0) as any as S.Schema<GetZonePermissionsRequest>,
+  output: __S(113, __c14, 1) as any as S.Schema<GetZonePermissionsResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1051,8 +1133,8 @@ export const listCatalogZones: API.OperationMethod<
   ListCatalogZonesError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(60, __c15, 0) as any as S.Schema<ListCatalogZonesRequest>,
-  output: __S(61, __c15, 1) as any as S.Schema<ListCatalogZonesResponse>,
+  input: __S(128, __c16, 0) as any as S.Schema<ListCatalogZonesRequest>,
+  output: __S(129, __c16, 1) as any as S.Schema<ListCatalogZonesResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1065,8 +1147,8 @@ export const listZones: API.OperationMethod<
   ListZonesError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(64, __c16, 0) as any as S.Schema<ListZonesRequest>,
-  output: __S(67, __c16, 3) as any as S.Schema<ListZonesResponse>,
+  input: __S(136, __c17, 0) as any as S.Schema<ListZonesRequest>,
+  output: __S(139, __c17, 3) as any as S.Schema<ListZonesResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1079,8 +1161,8 @@ export const publishAllPrivateKeys: API.OperationMethod<
   PublishAllPrivateKeysError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(68, __c17, 0) as any as S.Schema<PublishAllPrivateKeysRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<PublishAllPrivateKeysResponse>,
+  input: __S(144, __c18, 0) as any as S.Schema<PublishAllPrivateKeysRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<PublishAllPrivateKeysResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1093,8 +1175,8 @@ export const resyncZone: API.OperationMethod<
   ResyncZoneError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(76, __c19, 0) as any as S.Schema<ResyncZoneRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<ResyncZoneResponse>,
+  input: __S(160, __c20, 0) as any as S.Schema<ResyncZoneRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<ResyncZoneResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1107,8 +1189,8 @@ export const retireDnskey: API.OperationMethod<
   RetireDnskeyError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(80, __c20, 0) as any as S.Schema<RetireDnskeyRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<RetireDnskeyResponse>,
+  input: __S(168, __c21, 0) as any as S.Schema<RetireDnskeyRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<RetireDnskeyResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1121,8 +1203,8 @@ export const rolloverDnskey: API.OperationMethod<
   RolloverDnskeyError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(84, __c21, 0) as any as S.Schema<RolloverDnskeyRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<RolloverDnskeyResponse>,
+  input: __S(176, __c22, 0) as any as S.Schema<RolloverDnskeyRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<RolloverDnskeyResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1135,8 +1217,8 @@ export const setZoneOptions: API.OperationMethod<
   SetZoneOptionsError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(88, __c22, 0) as any as S.Schema<SetZoneOptionsRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<SetZoneOptionsResponse>,
+  input: __S(184, __c23, 0) as any as S.Schema<SetZoneOptionsRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<SetZoneOptionsResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1149,8 +1231,8 @@ export const setZonePermissions: API.OperationMethod<
   SetZonePermissionsError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(92, __c23, 0) as any as S.Schema<SetZonePermissionsRequest>,
-  output: __S(93, __c23, 1) as any as S.Schema<SetZonePermissionsResponse>,
+  input: __S(192, __c24, 0) as any as S.Schema<SetZonePermissionsRequest>,
+  output: __S(193, __c24, 1) as any as S.Schema<SetZonePermissionsResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1163,8 +1245,8 @@ export const signZone: API.OperationMethod<
   SignZoneError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(96, __c24, 0) as any as S.Schema<SignZoneRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<SignZoneResponse>,
+  input: __S(200, __c25, 0) as any as S.Schema<SignZoneRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<SignZoneResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1177,8 +1259,8 @@ export const unsignZone: API.OperationMethod<
   UnsignZoneError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(100, __c25, 0) as any as S.Schema<UnsignZoneRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<UnsignZoneResponse>,
+  input: __S(208, __c26, 0) as any as S.Schema<UnsignZoneRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<UnsignZoneResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1191,8 +1273,8 @@ export const updateDnskeyTtl: API.OperationMethod<
   UpdateDnskeyTtlError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(104, __c26, 0) as any as S.Schema<UpdateDnskeyTtlRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<UpdateDnskeyTtlResponse>,
+  input: __S(216, __c27, 0) as any as S.Schema<UpdateDnskeyTtlRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<UpdateDnskeyTtlResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1205,8 +1287,8 @@ export const updateNsec3Parameters: API.OperationMethod<
   UpdateNsec3ParametersError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(108, __c27, 0) as any as S.Schema<UpdateNsec3ParametersRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<UpdateNsec3ParametersResponse>,
+  input: __S(224, __c28, 0) as any as S.Schema<UpdateNsec3ParametersRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<UpdateNsec3ParametersResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1219,8 +1301,8 @@ export const updatePrivateKey: API.OperationMethod<
   UpdatePrivateKeyError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(112, __c28, 0) as any as S.Schema<UpdatePrivateKeyRequest>,
-  output: __S(4, __c1, 0) as any as S.Schema<UpdatePrivateKeyResponse>,
+  input: __S(232, __c29, 0) as any as S.Schema<UpdatePrivateKeyRequest>,
+  output: __S(8, __c1, 0) as any as S.Schema<UpdatePrivateKeyResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1233,8 +1315,8 @@ export const updateRecord: API.OperationMethod<
   UpdateRecordError,
   TechnitiumOpContext
 > = /*@__PURE__*/ API.make(() => ({
-  input: __S(120, __c30, 0) as any as S.Schema<UpdateRecordRequest>,
-  output: __S(121, __c30, 1) as any as S.Schema<UpdateRecordResponse>,
+  input: __S(248, __c31, 0) as any as S.Schema<UpdateRecordRequest>,
+  output: __S(249, __c31, 1) as any as S.Schema<UpdateRecordResponse>,
   errors: [UnknownTechnitiumError],
   protocol: TechnitiumProtocol,
 }));
@@ -1358,8 +1440,8 @@ function __c2(j: number): any {
     case 1:
       return S.suspend(() =>
         S.Struct({
-          addedRecord: S.optional(__S(17, __c4, 1)),
-          zone: S.optional(__S(18, __c4, 2)),
+          addedRecord: S.optional(__S(37, __c4, 5)),
+          zone: S.optional(__S(38, __c4, 6)),
         }),
       ).annotate({ identifier: "AddRecordResponse" });
   }
@@ -1374,24 +1456,39 @@ function __c3(j: number): any {
         }),
       ).annotate({ identifier: "GetRecordsResponseRecordsItemRDataComputedDigestsItem" });
     case 1:
-      return S.Array(__S(12, __c3, 0));
+      return S.Array(__S(24, __c3, 0));
   }
 }
 function __c4(j: number): any {
   switch (j) {
     case 0:
+      return S.Union([S.String, S.Number]);
+    case 1:
+      return S.Union([S.Number, S.String]);
+    case 2:
+      return S.suspend(() =>
+        S.Struct({
+          addressFamily: S.String,
+          prefix: S.Number,
+          negation: S.Boolean,
+          afdPart: S.String,
+        }),
+      ).annotate({ identifier: "GetRecordsResponseRecordsItemRDataAddressPrefixesItem" });
+    case 3:
+      return S.Array(__S(34, __c4, 2));
+    case 4:
       return S.suspend(() =>
         S.Struct({
           algorithm: S.optional(S.String),
           cname: S.optional(S.String),
-          computedDigests: S.optional(__S(13, __c3, 1)),
+          computedDigests: S.optional(__S(25, __c3, 1)),
           computedKeyTag: S.optional(S.Number),
           digest: S.optional(S.String),
           digestType: S.optional(S.String),
           dnsKeyState: S.optional(S.String),
           dnsKeyStateReadyBy: S.optional(S.String),
           expire: S.optional(S.Number),
-          flags: S.optional(S.String),
+          flags: S.optional(__S(32, __c4, 0)),
           hashAlgorithm: S.optional(S.String),
           ipAddress: S.optional(S.String),
           iterations: S.optional(S.Number),
@@ -1402,7 +1499,7 @@ function __c4(j: number): any {
           nextHashedOwnerName: S.optional(S.String),
           originalTtl: S.optional(S.Number),
           primaryNameServer: S.optional(S.String),
-          protocol: S.optional(S.Number),
+          protocol: S.optional(__S(33, __c4, 1)),
           publicKey: S.optional(S.String),
           refresh: S.optional(S.Number),
           responsiblePerson: S.optional(S.String),
@@ -1414,18 +1511,85 @@ function __c4(j: number): any {
           signatureInception: S.optional(S.String),
           signersName: S.optional(S.String),
           typeCovered: S.optional(S.String),
-          types: S.optional(__S(20, __c5, 0)),
+          types: S.optional(__S(40, __c5, 0)),
+          dataType: S.optional(S.String),
+          data: S.optional(S.String),
+          nameServerIdn: S.optional(S.String),
+          cnameIdn: S.optional(S.String),
+          primaryNameServerIdn: S.optional(S.String),
+          refreshString: S.optional(S.String),
+          retryString: S.optional(S.String),
+          expireString: S.optional(S.String),
+          minimumString: S.optional(S.String),
+          useSerialDateScheme: S.optional(S.Boolean),
           ptrName: S.optional(S.String),
+          ptrNameIdn: S.optional(S.String),
+          preference: S.optional(S.Number),
+          exchange: S.optional(S.String),
+          exchangeIdn: S.optional(S.String),
+          text: S.optional(S.String),
+          splitText: S.optional(S.Boolean),
+          characterStrings: S.optional(__S(40, __c5, 0)),
+          characterStringsBase64: S.optional(__S(40, __c5, 0)),
+          mailbox: S.optional(S.String),
+          txtDomain: S.optional(S.String),
+          txtDomainIdn: S.optional(S.String),
+          priority: S.optional(S.Number),
+          weight: S.optional(S.Number),
+          port: S.optional(S.Number),
+          target: S.optional(S.String),
+          targetIdn: S.optional(S.String),
+          order: S.optional(S.Number),
+          services: S.optional(S.String),
+          regexp: S.optional(S.String),
+          replacement: S.optional(S.String),
+          replacementIdn: S.optional(S.String),
+          dname: S.optional(S.String),
+          dnameIdn: S.optional(S.String),
+          addressPrefixes: S.optional(__S(35, __c4, 3)),
+          algorithmNumber: S.optional(S.Number),
+          digestTypeNumber: S.optional(S.Number),
+          fingerprintType: S.optional(S.String),
+          fingerprint: S.optional(S.String),
+          nextDomainName: S.optional(S.String),
+          dnsKeyStateActiveBy: S.optional(S.String),
+          certificateUsage: S.optional(S.String),
+          selector: S.optional(S.String),
+          matchingType: S.optional(S.String),
+          certificateAssociationData: S.optional(S.String),
+          scheme: S.optional(S.String),
+          svcPriority: S.optional(S.Number),
+          svcTargetName: S.optional(S.String),
+          svcParams: S.optional(__S(48, __c6, 0)),
+          autoIpv4Hint: S.optional(S.Boolean),
+          autoIpv6Hint: S.optional(S.Boolean),
+          uri: S.optional(S.String),
+          tag: S.optional(S.String),
+          value: S.optional(S.String),
+          aname: S.optional(S.String),
+          anameIdn: S.optional(S.String),
+          forwarder: S.optional(S.String),
+          dnssecValidation: S.optional(S.Boolean),
+          proxyType: S.optional(S.String),
+          proxyAddress: S.optional(S.String),
+          proxyPort: S.optional(S.Number),
+          proxyUsername: S.optional(S.String),
+          proxyPassword: S.optional(S.String.pipe(T.SensitiveValue({}))),
+          appName: S.optional(S.String),
+          classPath: S.optional(S.String),
+          type: S.optional(S.String),
+          alias: S.optional(S.String),
+          aliasIdn: S.optional(S.String),
         }),
       ).annotate({ identifier: "GetRecordsResponseRecordsItemRData" });
-    case 1:
+    case 5:
       return S.suspend(() =>
         S.Struct({
           disabled: S.Boolean,
           dnssecStatus: S.String,
           lastUsedOn: S.String,
           name: S.String,
-          rData: __S(16, __c4, 0),
+          rData: __S(36, __c4, 4),
           ttl: S.Number,
           type: S.String,
           comments: S.optional(S.String),
@@ -1434,9 +1598,10 @@ function __c4(j: number): any {
           lastModified: S.String,
           nameIdn: S.optional(S.String),
           ttlString: S.String,
+          glueRecords: S.optional(__S(40, __c5, 0)),
         }),
       ).annotate({ identifier: "AddRecordResponseAddedRecord" });
-    case 2:
+    case 6:
       return S.suspend(() =>
         S.Struct({
           disabled: S.Boolean,
@@ -1454,7 +1619,7 @@ function __c4(j: number): any {
           isExpired: S.optional(S.Boolean),
           syncFailed: S.optional(S.Boolean),
           notifyFailed: S.optional(S.Boolean),
-          notifyFailedFor: S.optional(__S(20, __c5, 0)),
+          notifyFailedFor: S.optional(__S(40, __c5, 0)),
         }),
       ).annotate({ identifier: "AddRecordResponseZone" });
   }
@@ -1466,6 +1631,12 @@ function __c5(j: number): any {
   }
 }
 function __c6(j: number): any {
+  switch (j) {
+    case 0:
+      return S.Record(S.String, S.String);
+  }
+}
+function __c7(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1483,7 +1654,7 @@ function __c6(j: number): any {
       ).annotate({ identifier: "DisableZoneRequest" });
   }
 }
-function __c7(j: number): any {
+function __c8(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1501,7 +1672,7 @@ function __c7(j: number): any {
       ).annotate({ identifier: "EnableZoneRequest" });
   }
 }
-function __c8(j: number): any {
+function __c9(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1531,13 +1702,13 @@ function __c8(j: number): any {
         }),
       ).annotate({ identifier: "GetDnssecPropertiesResponseDnssecPrivateKeysItem" });
     case 2:
-      return S.Array(__S(33, __c8, 1));
+      return S.Array(__S(73, __c9, 1));
     case 3:
       return S.suspend(() =>
         S.Struct({
           disabled: S.optional(S.Boolean),
           dnsKeyTtl: S.optional(S.Number),
-          dnssecPrivateKeys: S.optional(__S(34, __c8, 2)),
+          dnssecPrivateKeys: S.optional(__S(74, __c9, 2)),
           dnssecStatus: S.optional(S.String),
           internal: S.optional(S.Boolean),
           name: S.optional(S.String),
@@ -1546,7 +1717,7 @@ function __c8(j: number): any {
       ).annotate({ identifier: "GetDnssecPropertiesResponse" });
   }
 }
-function __c9(j: number): any {
+function __c10(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1566,7 +1737,7 @@ function __c9(j: number): any {
       return S.suspend(() =>
         S.Struct({
           algorithm: S.optional(S.String),
-          digests: S.optional(__S(13, __c3, 1)),
+          digests: S.optional(__S(25, __c3, 1)),
           dnsKeyState: S.optional(S.String),
           dnsKeyStateReadyBy: S.optional(S.String),
           keyTag: S.optional(S.Number),
@@ -1574,13 +1745,13 @@ function __c9(j: number): any {
         }),
       ).annotate({ identifier: "GetDsInfoResponseDsRecordsItem" });
     case 2:
-      return S.Array(__S(37, __c9, 1));
+      return S.Array(__S(81, __c10, 1));
     case 3:
       return S.suspend(() =>
         S.Struct({
           disabled: S.optional(S.Boolean),
           dnssecStatus: S.optional(S.String),
-          dsRecords: S.optional(__S(38, __c9, 2)),
+          dsRecords: S.optional(__S(82, __c10, 2)),
           internal: S.optional(S.Boolean),
           name: S.optional(S.String),
           type: S.optional(S.String),
@@ -1588,7 +1759,7 @@ function __c9(j: number): any {
       ).annotate({ identifier: "GetDsInfoResponse" });
   }
 }
-function __c10(j: number): any {
+function __c11(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1607,17 +1778,17 @@ function __c10(j: number): any {
         ),
       ).annotate({ identifier: "GetRecordsRequest" });
     case 1:
-      return S.Array(__S(17, __c4, 1));
+      return S.Array(__S(37, __c4, 5));
     case 2:
       return S.suspend(() =>
         S.Struct({
-          records: S.optional(__S(41, __c10, 1)),
-          zone: S.optional(__S(18, __c4, 2)),
+          records: S.optional(__S(89, __c11, 1)),
+          zone: S.optional(__S(38, __c4, 6)),
         }),
       ).annotate({ identifier: "GetRecordsResponse" });
   }
 }
-function __c11(j: number): any {
+function __c12(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1638,18 +1809,18 @@ function __c11(j: number): any {
     case 1:
       return S.suspend(() =>
         S.Struct({
-          allowedTypes: S.optional(__S(20, __c5, 0)),
+          allowedTypes: S.optional(__S(40, __c5, 0)),
           domain: S.optional(S.String),
           tsigKeyName: S.optional(S.String),
         }),
       ).annotate({ identifier: "GetZoneOptionsResponseUpdateSecurityPoliciesItem" });
     case 2:
-      return S.Array(__S(45, __c11, 1));
+      return S.Array(__S(97, __c12, 1));
     case 3:
       return S.suspend(() =>
         S.Struct({
-          availableCatalogZoneNames: S.optional(__S(20, __c5, 0)),
-          availableTsigKeyNames: S.optional(__S(20, __c5, 0)),
+          availableCatalogZoneNames: S.optional(__S(40, __c5, 0)),
+          availableTsigKeyNames: S.optional(__S(40, __c5, 0)),
           catalog: S.optional(S.String),
           disabled: S.optional(S.Boolean),
           dnssecStatus: S.optional(S.String),
@@ -1657,31 +1828,31 @@ function __c11(j: number): any {
           name: S.optional(S.String),
           notify: S.optional(S.String),
           notifyFailed: S.optional(S.Boolean),
-          notifyFailedFor: S.optional(__S(20, __c5, 0)),
-          notifyNameServers: S.optional(__S(48, __c12, 0)),
+          notifyFailedFor: S.optional(__S(40, __c5, 0)),
+          notifyNameServers: S.optional(__S(104, __c13, 0)),
           overrideCatalogNotify: S.optional(S.Boolean),
           overrideCatalogQueryAccess: S.optional(S.Boolean),
           overrideCatalogZoneTransfer: S.optional(S.Boolean),
           queryAccess: S.optional(S.String),
-          queryAccessNetworkACL: S.optional(__S(48, __c12, 0)),
+          queryAccessNetworkACL: S.optional(__S(104, __c13, 0)),
           type: S.optional(S.String),
           update: S.optional(S.String),
-          updateNetworkACL: S.optional(__S(20, __c5, 0)),
-          updateSecurityPolicies: S.optional(__S(46, __c11, 2)),
+          updateNetworkACL: S.optional(__S(40, __c5, 0)),
+          updateSecurityPolicies: S.optional(__S(98, __c12, 2)),
           zoneTransfer: S.optional(S.String),
-          zoneTransferNetworkACL: S.optional(__S(48, __c12, 0)),
-          zoneTransferTsigKeyNames: S.optional(__S(20, __c5, 0)),
+          zoneTransferNetworkACL: S.optional(__S(104, __c13, 0)),
+          zoneTransferTsigKeyNames: S.optional(__S(40, __c5, 0)),
         }),
       ).annotate({ identifier: "GetZoneOptionsResponse" });
   }
 }
-function __c12(j: number): any {
+function __c13(j: number): any {
   switch (j) {
     case 0:
       return S.Array(S.Unknown);
   }
 }
-function __c13(j: number): any {
+function __c14(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1701,17 +1872,17 @@ function __c13(j: number): any {
     case 1:
       return S.suspend(() =>
         S.Struct({
-          groupPermissions: S.optional(__S(57, __c14, 1)),
-          groups: S.optional(__S(20, __c5, 0)),
+          groupPermissions: S.optional(__S(121, __c15, 1)),
+          groups: S.optional(__S(40, __c5, 0)),
           section: S.optional(S.String),
           subItem: S.optional(S.String),
-          userPermissions: S.optional(__S(59, __c14, 3)),
-          users: S.optional(__S(20, __c5, 0)),
+          userPermissions: S.optional(__S(123, __c15, 3)),
+          users: S.optional(__S(40, __c5, 0)),
         }),
       ).annotate({ identifier: "GetZonePermissionsResponse" });
   }
 }
-function __c14(j: number): any {
+function __c15(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1723,7 +1894,7 @@ function __c14(j: number): any {
         }),
       ).annotate({ identifier: "GetZonePermissionsResponseGroupPermissionsItem" });
     case 1:
-      return S.Array(__S(56, __c14, 0));
+      return S.Array(__S(120, __c15, 0));
     case 2:
       return S.suspend(() =>
         S.Struct({
@@ -1734,10 +1905,10 @@ function __c14(j: number): any {
         }),
       ).annotate({ identifier: "GetZonePermissionsResponseUserPermissionsItem" });
     case 3:
-      return S.Array(__S(58, __c14, 2));
+      return S.Array(__S(122, __c15, 2));
   }
 }
-function __c15(j: number): any {
+function __c16(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1755,12 +1926,12 @@ function __c15(j: number): any {
     case 1:
       return S.suspend(() =>
         S.Struct({
-          catalogZoneNames: S.optional(__S(20, __c5, 0)),
+          catalogZoneNames: S.optional(__S(40, __c5, 0)),
         }),
       ).annotate({ identifier: "ListCatalogZonesResponse" });
   }
 }
-function __c16(j: number): any {
+function __c17(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1790,26 +1961,26 @@ function __c16(j: number): any {
           lastModified: S.optional(S.String),
           name: S.optional(S.String),
           notifyFailed: S.optional(S.Boolean),
-          notifyFailedFor: S.optional(__S(48, __c12, 0)),
+          notifyFailedFor: S.optional(__S(104, __c13, 0)),
           soaSerial: S.optional(S.Number),
           syncFailed: S.optional(S.Boolean),
           type: S.optional(S.String),
         }),
       ).annotate({ identifier: "ListZonesResponseZonesItem" });
     case 2:
-      return S.Array(__S(65, __c16, 1));
+      return S.Array(__S(137, __c17, 1));
     case 3:
       return S.suspend(() =>
         S.Struct({
           pageNumber: S.optional(S.Number),
           totalPages: S.optional(S.Number),
           totalZones: S.optional(S.Number),
-          zones: S.optional(__S(66, __c16, 2)),
+          zones: S.optional(__S(138, __c17, 2)),
         }),
       ).annotate({ identifier: "ListZonesResponse" });
   }
 }
-function __c17(j: number): any {
+function __c18(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1827,7 +1998,7 @@ function __c17(j: number): any {
       ).annotate({ identifier: "PublishAllPrivateKeysRequest" });
   }
 }
-function __c18(j: number): any {
+function __c19(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1846,7 +2017,7 @@ function __c18(j: number): any {
       ).annotate({ identifier: "CloneZoneRequest" });
   }
 }
-function __c19(j: number): any {
+function __c20(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1864,7 +2035,7 @@ function __c19(j: number): any {
       ).annotate({ identifier: "ResyncZoneRequest" });
   }
 }
-function __c20(j: number): any {
+function __c21(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1883,7 +2054,7 @@ function __c20(j: number): any {
       ).annotate({ identifier: "RetireDnskeyRequest" });
   }
 }
-function __c21(j: number): any {
+function __c22(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1902,7 +2073,7 @@ function __c21(j: number): any {
       ).annotate({ identifier: "RolloverDnskeyRequest" });
   }
 }
-function __c22(j: number): any {
+function __c23(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1939,7 +2110,7 @@ function __c22(j: number): any {
       ).annotate({ identifier: "SetZoneOptionsRequest" });
   }
 }
-function __c23(j: number): any {
+function __c24(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1960,15 +2131,15 @@ function __c23(j: number): any {
     case 1:
       return S.suspend(() =>
         S.Struct({
-          groupPermissions: S.optional(__S(57, __c14, 1)),
+          groupPermissions: S.optional(__S(121, __c15, 1)),
           section: S.optional(S.String),
           subItem: S.optional(S.String),
-          userPermissions: S.optional(__S(59, __c14, 3)),
+          userPermissions: S.optional(__S(123, __c15, 3)),
         }),
       ).annotate({ identifier: "SetZonePermissionsResponse" });
   }
 }
-function __c24(j: number): any {
+function __c25(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -1998,7 +2169,7 @@ function __c24(j: number): any {
       ).annotate({ identifier: "SignZoneRequest" });
   }
 }
-function __c25(j: number): any {
+function __c26(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -2016,7 +2187,7 @@ function __c25(j: number): any {
       ).annotate({ identifier: "UnsignZoneRequest" });
   }
 }
-function __c26(j: number): any {
+function __c27(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -2035,7 +2206,7 @@ function __c26(j: number): any {
       ).annotate({ identifier: "UpdateDnskeyTtlRequest" });
   }
 }
-function __c27(j: number): any {
+function __c28(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -2055,7 +2226,7 @@ function __c27(j: number): any {
       ).annotate({ identifier: "UpdateNsec3ParametersRequest" });
   }
 }
-function __c28(j: number): any {
+function __c29(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -2075,7 +2246,7 @@ function __c28(j: number): any {
       ).annotate({ identifier: "UpdatePrivateKeyRequest" });
   }
 }
-function __c29(j: number): any {
+function __c30(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -2093,7 +2264,7 @@ function __c29(j: number): any {
       ).annotate({ identifier: "ConvertToNsecRequest" });
   }
 }
-function __c30(j: number): any {
+function __c31(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -2233,13 +2404,13 @@ function __c30(j: number): any {
     case 1:
       return S.suspend(() =>
         S.Struct({
-          updatedRecord: S.optional(__S(17, __c4, 1)),
-          zone: S.optional(__S(18, __c4, 2)),
+          updatedRecord: S.optional(__S(37, __c4, 5)),
+          zone: S.optional(__S(38, __c4, 6)),
         }),
       ).annotate({ identifier: "UpdateRecordResponse" });
   }
 }
-function __c31(j: number): any {
+function __c32(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -2257,7 +2428,7 @@ function __c31(j: number): any {
       ).annotate({ identifier: "ConvertToNsec3Request" });
   }
 }
-function __c32(j: number): any {
+function __c33(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -2276,7 +2447,7 @@ function __c32(j: number): any {
       ).annotate({ identifier: "ConvertZoneTypeRequest" });
   }
 }
-function __c33(j: number): any {
+function __c34(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -2316,7 +2487,7 @@ function __c33(j: number): any {
       ).annotate({ identifier: "CreateZoneResponse" });
   }
 }
-function __c34(j: number): any {
+function __c35(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -2335,7 +2506,7 @@ function __c34(j: number): any {
       ).annotate({ identifier: "DeletePrivateKeyRequest" });
   }
 }
-function __c35(j: number): any {
+function __c36(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -2400,7 +2571,7 @@ function __c35(j: number): any {
       ).annotate({ identifier: "DeleteRecordRequest" });
   }
 }
-function __c36(j: number): any {
+function __c37(j: number): any {
   switch (j) {
     case 0:
       return S.suspend(() =>
@@ -2418,12 +2589,10 @@ function __c36(j: number): any {
         ),
       ).annotate({ identifier: "DeleteZoneRequest" });
     case 1:
-      return S.Record(S.String, S.String);
-    case 2:
       return S.suspend(() =>
         S.Struct({
-          deleted: S.optional(__S(20, __c5, 0)),
-          failed: S.optional(__S(145, __c36, 1)),
+          deleted: S.optional(__S(40, __c5, 0)),
+          failed: S.optional(__S(48, __c6, 0)),
         }),
       ).annotate({ identifier: "DeleteZoneResponse" });
   }
