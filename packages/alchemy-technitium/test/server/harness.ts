@@ -107,24 +107,25 @@ export async function commentsOf(zone: string, name: string, type: string) {
 /**
  * The Record provider with the scoped token, strict response validation and an HTTP client that
  * records every write as `<operation> <name>`, so tests can prove that a deploy wrote nothing.
+ * `beforeWrite` runs just before each write is sent, to change the server in the meantime.
  */
-function recordingProviders(writes: string[]) {
+function recordingProviders(writes: string[], beforeWrite?: (write: string) => Promise<unknown>) {
   const { url, scopedToken } = inject("technitium");
   const recordingHttp = Layer.effect(
     HttpClient.HttpClient,
     Effect.gen(function* () {
       const client = yield* HttpClient.HttpClient;
-      return HttpClient.tapRequest(client, (request) =>
-        Effect.sync(() => {
-          const operation = /\/api\/zones\/records\/(add|update|delete)$/.exec(
-            new URL(request.url).pathname,
-          )?.[1];
-          if (operation === undefined) return;
-          const body =
-            request.body._tag === "Uint8Array" ? new TextDecoder().decode(request.body.body) : "";
-          writes.push(`${operation} ${new URLSearchParams(body).get("domain")}`);
-        }),
-      );
+      return HttpClient.tapRequest(client, (request) => {
+        const operation = /\/api\/zones\/records\/(add|update|delete)$/.exec(
+          new URL(request.url).pathname,
+        )?.[1];
+        if (operation === undefined) return Effect.void;
+        const body =
+          request.body._tag === "Uint8Array" ? new TextDecoder().decode(request.body.body) : "";
+        const write = `${operation} ${new URLSearchParams(body).get("domain")}`;
+        writes.push(write);
+        return beforeWrite ? Effect.promise(() => beforeWrite(write)) : Effect.void;
+      });
     }),
   ).pipe(Layer.provide(FetchHttpClient.layer));
   return Layer.effect(Technitium.Providers, Provider.collection([Technitium.Record])).pipe(
@@ -150,9 +151,17 @@ function loginProviders() {
   );
 }
 
-export function harness({ login = false, stack = "technitium" } = {}) {
+export function harness({
+  login = false,
+  stack = "technitium",
+  beforeWrite,
+}: {
+  login?: boolean;
+  stack?: string;
+  beforeWrite?: (write: string) => Promise<unknown>;
+} = {}) {
   const writes: string[] = [];
-  const providers = login ? loginProviders() : recordingProviders(writes);
+  const providers = login ? loginProviders() : recordingProviders(writes, beforeWrite);
   let stateLayer = Layer.succeed(State.State, State.InMemoryService({}));
   const options = () => ({ providers, state: stateLayer, stage: "test" });
   const scratch = () => Core.scratchStack(options(), stack);

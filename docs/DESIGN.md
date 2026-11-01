@@ -246,9 +246,10 @@ disabled record, so a disabled record is added and then disabled.
 
 Before each write, the provider reads the records at the name; after it, it reads them again and
 fails with `TechnitiumRecordMismatch` if the record differs from the declaration or any other
-record at the name changed. Technitium has no version check for records, so writes to the same
-name are serialized within a deploy. An edit in the web console between the read and the write
-can still be overwritten; the check after the write does not detect changes to the managed
+record at the name changed. At the zone apex, the SOA serial is the one exception: Technitium
+raises it with every write to the zone. Technitium has no version check for records, so writes to
+the same name are serialized within a deploy. An edit in the web console between the read and the
+write can still be overwritten; the check after the write does not detect changes to the managed
 record itself.
 
 ### Side effects

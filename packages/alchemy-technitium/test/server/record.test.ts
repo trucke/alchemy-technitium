@@ -29,6 +29,55 @@ const a = (
     ...(props.disabled === undefined ? {} : { disabled: props.disabled }),
   });
 
+/** An A record at the zone apex, next to the zone's SOA and NS records. */
+const apex = (address: string) =>
+  Technitium.Record("apex", {
+    zone: ZONE,
+    name: ZONE,
+    type: "A",
+    address,
+    ttl: 300,
+    comment: "apex",
+  }).pipe(RemovalPolicy.destroy());
+
+interface ApexRecord {
+  readonly type: string;
+  readonly ttl: number;
+  readonly disabled: boolean;
+  readonly comments?: string;
+  readonly rData: { readonly serial?: number } & Record<string, unknown>;
+}
+
+/** The zone's SOA and NS records, as the server reports them. */
+async function zoneRecords() {
+  const { records } = await webConsole<{ records: ApexRecord[] }>("/api/zones/records/get", {
+    zone: ZONE,
+    domain: ZONE,
+  });
+  return records
+    .filter((record) => record.type === "SOA" || record.type === "NS")
+    .map(({ type, ttl, disabled, comments, rData }) => ({ type, ttl, disabled, comments, rData }));
+}
+
+/** Changes the SOA record's refresh interval in the web console and keeps everything else. */
+async function setSoaRefresh(refresh: number) {
+  const soa = (await zoneRecords()).find((record) => record.type === "SOA");
+  if (soa === undefined) throw new Error("no SOA record");
+  const { primaryNameServer, responsiblePerson, serial, retry, expire, minimum } = soa.rData;
+  await webConsole("/api/zones/records/update", {
+    zone: ZONE,
+    domain: ZONE,
+    type: "SOA",
+    ttl: soa.ttl,
+    ...Object.fromEntries(
+      Object.entries({ primaryNameServer, responsiblePerson, serial, retry, expire, minimum }).map(
+        ([key, value]) => [key, String(value)],
+      ),
+    ),
+    refresh,
+  });
+}
+
 /** A record added in the web console, outside Alchemy. */
 const addByHand = (params: Record<string, string | number | boolean>) =>
   webConsole("/api/zones/records/add", { zone: ZONE, domain: WWW, ...params });
@@ -408,6 +457,56 @@ describe("Technitium.Record", () => {
     } finally {
       await clearZone(ZONES.reverse);
       await reversePermissions("alchemy|true|false|false");
+    }
+  });
+
+  it("adopts, changes, deletes and creates a record at the zone apex", async () => {
+    await webConsole("/api/zones/records/add", {
+      zone: ZONE,
+      domain: ZONE,
+      type: "A",
+      ipAddress: "192.0.2.50",
+      ttl: 300,
+      comments: "apex",
+    });
+    const before = await zoneRecords();
+    const stack = harness();
+    await stack.deploy(apex("192.0.2.50"), true);
+    await stack.deploy(apex("192.0.2.51"));
+    await stack.destroy();
+    const created = harness();
+    await created.deploy(apex("192.0.2.52"));
+    expect((await recordsAt(ZONE, ZONE)).filter((record) => record.type === "A")).toEqual([
+      {
+        type: "A",
+        value: "192.0.2.52",
+        ttl: 300,
+        disabled: false,
+        comments: marked("apex", "apex"),
+      },
+    ]);
+    const writes = [...stack.writes, ...created.writes];
+    expect(writes).toEqual([`update ${ZONE}`, `update ${ZONE}`, `delete ${ZONE}`, `add ${ZONE}`]);
+    // Each write raised the SOA serial once, and nothing else changed at the apex.
+    const after = await zoneRecords();
+    const serial = (records: readonly ApexRecord[]) =>
+      records.find((record) => record.type === "SOA")?.rData.serial ?? 0;
+    expect(serial(after)).toBe(serial(before) + writes.length);
+    const withoutSerial = (records: readonly ApexRecord[]) =>
+      records.map((record) => ({ ...record, rData: { ...record.rData, serial: undefined } }));
+    expect(withoutSerial(after)).toEqual(withoutSerial(before));
+  });
+
+  it("still fails when another SOA setting changes during a write at the apex", async () => {
+    const [soa] = (await zoneRecords()).filter((record) => record.type === "SOA");
+    const refresh = Number(soa?.rData.refresh);
+    const stack = harness({ beforeWrite: () => setSoaRefresh(refresh + 600) });
+    try {
+      const failure = await stack.deployFailure(apex("192.0.2.50"));
+      expect(failure).toContain(`other records at "${ZONE}" changed during the write`);
+      expect(failure).toContain(`"refresh":${refresh + 600}`);
+    } finally {
+      await setSoaRefresh(refresh);
     }
   });
 

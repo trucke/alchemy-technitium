@@ -306,7 +306,10 @@ type LiveRecord = Technitium.zones.GetRecordsResponseRecordsItem;
 export interface Observed {
   readonly name: string;
   readonly type: string;
-  /** The canonical address or target; the raw data for other types. */
+  /**
+   * The canonical address or target; the raw data for other types, except the SOA serial. The
+   * server raises the serial with every write to the zone, so it is no change to look out for.
+   */
   readonly value: string;
   readonly ttl: number;
   readonly disabled: boolean;
@@ -325,7 +328,7 @@ export function observeRecord(record: LiveRecord): Observed {
       ? (canonicalAddress(record.type, data.ipAddress ?? "") ?? data.ipAddress ?? "")
       : record.type === "CNAME"
         ? normalizeName(data.cname ?? "")
-        : JSON.stringify(data);
+        : JSON.stringify(record.type === "SOA" ? { ...data, serial: undefined } : data);
   return {
     name: normalizeName(record.name),
     type: record.type,
