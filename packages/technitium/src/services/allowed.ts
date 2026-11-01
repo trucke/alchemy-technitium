@@ -42,20 +42,35 @@ export interface ListAllowedZonesResponseRecordsItemRData {
   responsiblePerson?: string;
   retry?: number;
   serial?: number;
-  value?: string;
+  nameServer?: string;
+  nameServerIdn?: string;
+  primaryNameServerIdn?: string;
+  refreshString?: string;
+  retryString?: string;
+  expireString?: string;
+  minimumString?: string;
 }
 export interface ListAllowedZonesResponseRecordsItem {
-  name?: string;
-  rData?: ListAllowedZonesResponseRecordsItemRData;
-  ttl?: string;
-  type?: string;
+  name: string;
+  rData: ListAllowedZonesResponseRecordsItemRData;
+  ttl: number;
+  type: string;
+  ttlString: string;
+  disabled: boolean;
+  dnssecStatus: string;
+  lastUsedOn: string;
+  lastModified: string;
+  expiryTtl: number;
+  expiryTtlString: string;
+  nameIdn?: string;
 }
 export type ListAllowedZonesResponseRecords = Array<ListAllowedZonesResponseRecordsItem>;
-export type ListAllowedZonesResponseZones = Array<unknown>;
+export type ListAllowedZonesResponseZones = Array<string>;
 export interface ListAllowedZonesResponse {
-  domain?: string;
-  records?: ListAllowedZonesResponseRecords;
-  zones?: ListAllowedZonesResponseZones;
+  domain: string;
+  records: ListAllowedZonesResponseRecords;
+  zones: ListAllowedZonesResponseZones;
+  domainIdn?: string;
 }
 export type AllowZoneError = TechnitiumOpError;
 /** POST /api/allowed/add. Permissions: Allowed: Modify. */
@@ -227,28 +242,43 @@ function __c5(j: number): any {
           responsiblePerson: S.optional(S.String),
           retry: S.optional(S.Number),
           serial: S.optional(S.Number),
-          value: S.optional(S.String),
+          nameServer: S.optional(S.String),
+          nameServerIdn: S.optional(S.String),
+          primaryNameServerIdn: S.optional(S.String),
+          refreshString: S.optional(S.String),
+          retryString: S.optional(S.String),
+          expireString: S.optional(S.String),
+          minimumString: S.optional(S.String),
         }),
       ).annotate({ identifier: "ListAllowedZonesResponseRecordsItemRData" });
     case 2:
       return S.suspend(() =>
         S.Struct({
-          name: S.optional(S.String),
-          rData: S.optional(__S(41, __c5, 1)),
-          ttl: S.optional(S.String),
-          type: S.optional(S.String),
+          name: S.String,
+          rData: __S(41, __c5, 1),
+          ttl: S.Number,
+          type: S.String,
+          ttlString: S.String,
+          disabled: S.Boolean,
+          dnssecStatus: S.String,
+          lastUsedOn: S.String,
+          lastModified: S.String,
+          expiryTtl: S.Number,
+          expiryTtlString: S.String,
+          nameIdn: S.optional(S.String),
         }),
       ).annotate({ identifier: "ListAllowedZonesResponseRecordsItem" });
     case 3:
       return S.Array(__S(42, __c5, 2));
     case 4:
-      return S.Array(S.Unknown);
+      return S.Array(S.String);
     case 5:
       return S.suspend(() =>
         S.Struct({
-          domain: S.optional(S.String),
-          records: S.optional(__S(43, __c5, 3)),
-          zones: S.optional(__S(44, __c5, 4)),
+          domain: S.String,
+          records: __S(43, __c5, 3),
+          zones: __S(44, __c5, 4),
+          domainIdn: S.optional(S.String),
         }),
       ).annotate({ identifier: "ListAllowedZonesResponse" });
   }

@@ -11,7 +11,10 @@ export const SCOPED_USER = "alchemy";
 
 declare module "vitest" {
   export interface ProvidedContext {
-    /** The throwaway server's address, an admin token and a token scoped to the test zones. */
-    technitium: { url: string; adminToken: string; scopedToken: string };
+    /**
+     * The throwaway server's address, an admin token, a token scoped to the test zones, and the
+     * run's network, on which a test can start a second server (`startServer` in globalSetup.ts).
+     */
+    technitium: { url: string; adminToken: string; scopedToken: string; network: string };
   }
 }

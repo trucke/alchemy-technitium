@@ -27,8 +27,9 @@ pnpm test:server
 The setup in `packages/alchemy-technitium/test/server/globalSetup.ts`:
 
 1. Starts a container named `alchemy-technitium-test-<pid>` from `technitium/dns-server:15.5.0`,
-   pinned by digest, with its configuration on a tmpfs and its web service on a random
-   `127.0.0.1` port. The admin password is random and reaches the container as a file.
+   pinned by digest, on a Podman network of the same name, with its configuration on a tmpfs and
+   its web service on a random `127.0.0.1` port. The admin password is random and reaches the
+   container as a file.
 2. Creates an admin token, the Primary zones `example.test` and `homelab.example.com`, the reverse
    zone `2.0.192.in-addr.arpa` and the conditional forwarder zone `forward.test`.
 3. Creates the user `alchemy` with View, Modify and Delete on the two Primary zones and on
@@ -36,18 +37,20 @@ The setup in `packages/alchemy-technitium/test/server/globalSetup.ts`:
    token, as a real deployment should; the admin token stands in for someone using the web
    console.
 
-The container and its files under `.local/test-server/` are removed when the run ends, also after
-a failure.
+The container, its files under `.local/test-server/` and the network are removed when the run
+ends, also after a failure.
 
 The tests run with distilled's strict response validation, so every response the provider reads
 must match the generated model. They record every record write the provider sends, so they can
 prove that an unchanged deploy writes nothing and a refused change writes nothing either.
 
-`sdk.test.ts` checks the record model of the client. It creates its own zones with the admin
-token: a Primary zone with a record of each type the API can add (except APP, which needs an
-installed DNS app), two zones signed with NSEC and NSEC3, and a conditional forwarder zone with an
-HTTP proxy. It reads each whole zone with strict response validation, and adds and updates
-records in the Primary zone.
+`sdk.test.ts` checks the record models of the client with strict response validation. It creates
+its own zones with the admin token: a Primary zone with a record of each type the API can add
+(except APP, which needs an installed DNS app), two zones signed with NSEC and NSEC3, and a
+conditional forwarder zone with an HTTP proxy. It reads each whole zone, adds and updates records
+in the Primary zone, and reads the allowed and blocked zone lists. For the cache, it starts a
+second container on the same network with a zone of every record type, forwards that zone to it,
+resolves each record and reads the cache.
 
 Two tests run the documented examples: the SDK program with Node, and the stack with the Alchemy
 CLI (`deploy`, `plan` and `destroy`), both logged in through `TECHNITIUM_API_URL` and

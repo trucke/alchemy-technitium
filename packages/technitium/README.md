@@ -99,8 +99,10 @@ boolean has that type, and enum values come from the documentation.
 Response types come from the documentation's example responses. Their members are optional unless
 a [patch](#develop-and-regenerate) marks them required after checking the server source, as for
 the records and zone summaries of `zones.getRecords`, `zones.addRecord` and `zones.updateRecord`.
-The record data (`rData`) of these calls has the members of every record type the server writes,
-all optional. `flags` and `protocol` are a string or a number, depending on the record type.
+The record data (`rData`) of these calls and of `cache.listCachedZones` has the members of every
+record type the server writes, all optional. `flags` and `protocol` are a string or a number,
+depending on the record type. The record lists of `allowed.listAllowedZones` and
+`blocked.listBlockedZones` hold only SOA and NS records.
 Responses are not validated by default. To check them, provide distilled's
 `ResponseValidation.strict` or `ResponseValidation.additionalProperties` layer from
 `@distilled.cloud/core`; a mismatch then fails with `TechnitiumParseError`.
@@ -138,9 +140,10 @@ neither the token nor a password can reach a log.
   `zones/dnssec/properties/activateKskDnsKey`.
 - Operations are not retried, because replaying a write could apply it twice.
 - Only the operations of the Alchemy provider (`zones.getRecords`, `addRecord`, `updateRecord` and
-  `deleteRecord`) are tested against a server. Their responses pass strict validation on
+  `deleteRecord`) and the record lists (`allowed.listAllowedZones`, `blocked.listBlockedZones` and
+  `cache.listCachedZones`) are tested against a server. Their responses pass strict validation on
   Technitium 15.5.0, 15.5.1 and 15.6.2, including whole zones with every record type except APP
-  and ALIAS, signed zones and conditional forwarder zones.
+  and ALIAS, signed zones, conditional forwarder zones and a cache filled from such a zone.
 
 ## Develop and regenerate
 

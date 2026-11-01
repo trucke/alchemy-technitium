@@ -101,8 +101,8 @@ files exactly.
 ### Patches
 
 The examples in `APIDOCS.md` predate some members the server writes and show only some record
-types. Three patches in `patches/zones/` correct the shapes of records and zones, each with its
-evidence in `description`:
+types. Patches correct the shapes of records and zones, each with its evidence in `description`.
+In `patches/zones/`:
 
 - `record-data.patch.json`: `rData` has the members of every record type that `WriteRecordAsJson`
   in `WebServiceZonesApi.cs` writes, such as the `*String` intervals of SOA records and the
@@ -116,9 +116,15 @@ evidence in `description`:
 - `zone-summary.patch.json`: the zone summary in the same responses (`WriteZoneInfoAsJson`), where
   `catalog` is `null` for zones outside a catalog zone.
 
+The lists of allowed zones, blocked zones and the cache use the same record writer, each with
+`list-zones.patch.json` in its module's folder. Allowed and blocked zones hold only an SOA and an
+NS record, so their record data has the members of these two types. Cached records are written as
+records outside a zone: `ttl` and the SOA intervals are text, and they carry response metadata
+instead of zone details.
+
 The server tests run these operations with strict response validation, which fails on any member
-the model lacks, and read whole zones with every record type except APP and ALIAS. Removing a
-patched member makes them fail.
+the model lacks, and read whole zones with every record type except APP and ALIAS, the allowed and
+blocked zone lists and the cache. Removing a patched member makes them fail.
 
 ### Protocol
 
