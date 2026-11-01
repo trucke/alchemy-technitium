@@ -246,11 +246,13 @@ disabled record, so a disabled record is added and then disabled.
 
 Before each write, the provider reads the records at the name; after it, it reads them again and
 fails with `TechnitiumRecordMismatch` if the record differs from the declaration or any other
-record at the name changed. At the zone apex, the SOA serial is the one exception: Technitium
-raises it with every write to the zone. Technitium has no version check for records, so writes to
-the same name are serialized within a deploy. An edit in the web console between the read and the
-write can still be overwritten; the check after the write does not detect changes to the managed
-record itself.
+record at the name changed. Two changes are expected: Technitium raises the SOA serial at the zone
+apex with every write to the zone, and in signed zones it renews the RRSIG, NSEC and NSEC3 records
+it derives from the others. The serial is not compared, and the provider ignores these three
+record types altogether, so a CNAME record can share its name with them, as DNS allows.
+Technitium has no version check for records, so writes to the same name are serialized within a
+deploy. An edit in the web console between the read and the write can still be overwritten; the
+check after the write does not detect changes to the managed record itself.
 
 ### Side effects
 

@@ -4,7 +4,7 @@ import { renamedFrom } from "alchemy/Rename";
 import * as Effect from "effect/Effect";
 import { beforeEach, describe, expect, it } from "vitest";
 import * as Technitium from "../../src/index.ts";
-import { ZONES } from "./context.ts";
+import { SCOPED_USER, ZONES } from "./context.ts";
 import { clearZone, commentsOf, harness, marked, recordsAt, webConsole } from "./harness.ts";
 
 const ZONE = "example.test";
@@ -507,6 +507,54 @@ describe("Technitium.Record", () => {
       expect(failure).toContain(`"refresh":${refresh + 600}`);
     } finally {
       await setSoaRefresh(refresh);
+    }
+  });
+
+  it("writes records in a DNSSEC-signed zone, where Technitium re-signs each name", async () => {
+    const zone = "signed.test";
+    await webConsole("/api/zones/create", { zone, type: "Primary" });
+    try {
+      // NSEC records sit at the names themselves, next to the RRSIG records of each record set.
+      await webConsole("/api/zones/dnssec/sign", {
+        zone,
+        algorithm: "ECDSA",
+        curve: "P256",
+        nxProof: "NSEC",
+      });
+      await webConsole("/api/zones/permissions/set", {
+        zone,
+        userPermissions: `${SCOPED_USER}|true|true|true`,
+        groupPermissions: "Administrators|true|true|true",
+      });
+      const records = (address: string, target: string) =>
+        Effect.all(
+          [
+            Technitium.Record("web", { zone, name: `www.${zone}`, type: "A", address }),
+            Technitium.Record("apex", { zone, name: zone, type: "A", address }),
+            Technitium.Record("alias", {
+              zone,
+              name: `alias.${zone}`,
+              type: "CNAME",
+              target: `${target}.${zone}`,
+            }),
+          ].map((record) => record.pipe(RemovalPolicy.destroy())),
+        );
+      const stack = harness();
+      await stack.deploy(records("192.0.2.70", "www"));
+      await stack.deploy(records("192.0.2.71", "other"));
+      expect((await recordsAt(zone, `www.${zone}`)).filter((r) => r.type === "A")).toMatchObject([
+        { value: "192.0.2.71" },
+      ]);
+      expect(
+        (await recordsAt(zone, `alias.${zone}`)).filter((r) => r.type === "CNAME"),
+      ).toMatchObject([{ value: `other.${zone}` }]);
+      await stack.destroy();
+      for (const name of [`www.${zone}`, zone, `alias.${zone}`])
+        expect(
+          (await recordsAt(zone, name)).filter((r) => r.type === "A" || r.type === "CNAME"),
+        ).toEqual([]);
+    } finally {
+      await webConsole("/api/zones/delete", { zone });
     }
   });
 

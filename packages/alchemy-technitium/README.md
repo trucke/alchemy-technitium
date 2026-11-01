@@ -176,6 +176,7 @@ A record with an automatic expiry (`expiryTtl`) is refused.
   when an address changes.
 - **Secondary servers:** each write increases the zone's SOA serial, and Technitium notifies the
   zone's secondary servers as for an edit in the web console.
+- **DNSSEC:** in signed zones, Technitium signs each change as for an edit in the web console.
 
 ## Changes and deletion
 

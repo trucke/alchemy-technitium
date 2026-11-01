@@ -342,7 +342,16 @@ export function observeRecord(record: LiveRecord): Observed {
   };
 }
 
-/** Every record at one name of a zone, after checking that the zone exists and is Primary. */
+/**
+ * Records that Technitium derives from the others when it signs a zone and renews with every
+ * write. They belong to no one, and DNS lets them share a name with a CNAME record.
+ */
+const SIGNATURES: ReadonlySet<string> = new Set(["RRSIG", "NSEC", "NSEC3"]);
+
+/**
+ * Every record at one name of a zone, after checking that the zone exists and is Primary,
+ * without {@link SIGNATURES}.
+ */
 interface NameRecords {
   readonly zone: string;
   readonly name: string;
@@ -381,7 +390,7 @@ const lookupName = (zone: string, name: string) =>
           name,
           records: (response.records ?? [])
             .map(observeRecord)
-            .filter((record) => record.name === name),
+            .filter((record) => record.name === name && !SIGNATURES.has(record.type)),
         });
       },
     ),
