@@ -1,6 +1,6 @@
 {
   "name": "@distilled.cloud/technitium",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Effect-native Technitium DNS Server SDK, generated from Technitium's API documentation and server source",
   "license": "Apache-2.0",
