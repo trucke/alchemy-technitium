@@ -6,7 +6,7 @@ tarballs are built.
 
 ## Create a release
 
-These steps release `0.2.0`. For another version, replace `0.2.0` everywhere. They require Node
+These steps release `0.3.0`. For another version, replace `0.3.0` everywhere. They require Node
 24, pnpm 12.15.0, Podman and the GitHub CLI.
 
 1. Check that `version` in both `packages/*/package.json` files and the provider's peer dependency
@@ -31,22 +31,22 @@ These steps release `0.2.0`. For another version, replace `0.2.0` everywhere. Th
    pnpm release:pack
    ```
 
-   `release/` now contains `distilled.cloud-technitium-0.2.0.tgz` and
-   `alchemy.run-technitium-0.2.0.tgz`.
+   `release/` now contains `distilled.cloud-technitium-0.3.0.tgz` and
+   `alchemy.run-technitium-0.3.0.tgz`.
 
 5. Tag `main` and push the tag:
 
    ```sh
-   jj tag set v0.2.0 -r main
-   jj git push --remote origin --tag v0.2.0
+   jj tag set v0.3.0 -r main
+   jj git push --remote origin --tag v0.3.0
    ```
 
 6. Create the GitHub release with both tarballs:
 
    ```sh
-   gh release create v0.2.0 --repo trucke/alchemy-technitium --verify-tag --title v0.2.0 \
+   gh release create v0.3.0 --repo trucke/alchemy-technitium --verify-tag --title v0.3.0 \
      --generate-notes \
-     release/distilled.cloud-technitium-0.2.0.tgz release/alchemy.run-technitium-0.2.0.tgz
+     release/distilled.cloud-technitium-0.3.0.tgz release/alchemy.run-technitium-0.3.0.tgz
    ```
 
 Never replace the tarballs of a published release. A project's lockfile pins each tarball's
@@ -62,8 +62,8 @@ project's copies; the provider is tested with `alchemy` 2.0.0-beta.84:
 ```json
 {
   "dependencies": {
-    "@alchemy.run/technitium": "https://github.com/trucke/alchemy-technitium/releases/download/v0.2.0/alchemy.run-technitium-0.2.0.tgz",
-    "@distilled.cloud/technitium": "https://github.com/trucke/alchemy-technitium/releases/download/v0.2.0/distilled.cloud-technitium-0.2.0.tgz",
+    "@alchemy.run/technitium": "https://github.com/trucke/alchemy-technitium/releases/download/v0.3.0/alchemy.run-technitium-0.3.0.tgz",
+    "@distilled.cloud/technitium": "https://github.com/trucke/alchemy-technitium/releases/download/v0.3.0/distilled.cloud-technitium-0.3.0.tgz",
     "@effect/platform-node": "4.0.5",
     "alchemy": "2.0.0-beta.84",
     "effect": "4.0.5"

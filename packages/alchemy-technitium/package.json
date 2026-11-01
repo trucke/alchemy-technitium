@@ -1,6 +1,6 @@
 {
   "name": "@alchemy.run/technitium",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Alchemy resources for Technitium DNS Server records",
   "license": "Apache-2.0",
@@ -37,7 +37,7 @@
     "effect": "4.0.5"
   },
   "peerDependencies": {
-    "@distilled.cloud/technitium": "0.2.0",
+    "@distilled.cloud/technitium": "0.3.0",
     "alchemy": "2.0.0-beta.84",
     "effect": "^4.0.5"
   },
