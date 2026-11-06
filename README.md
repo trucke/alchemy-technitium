@@ -65,7 +65,7 @@ reachable over HTTPS, or over HTTP on a loopback address (for example through an
 1. Clone the repository and install the dependencies:
 
    ```sh
-   git clone https://github.com/trucke/alchemy-technitium.git
+   git clone https://github.com/sudokvn/alchemy-technitium.git
    cd alchemy-technitium
    pnpm install --frozen-lockfile
    ```

@@ -44,7 +44,7 @@ These steps release `0.3.1`. For another version, replace `0.3.1` everywhere. Th
 6. Create the GitHub release with both tarballs:
 
    ```sh
-   gh release create v0.3.1 --repo trucke/alchemy-technitium --verify-tag --title v0.3.1 \
+   gh release create v0.3.1 --repo sudokvn/alchemy-technitium --verify-tag --title v0.3.1 \
      --generate-notes \
      release/distilled.cloud-technitium-0.3.1.tgz release/alchemy.run-technitium-0.3.1.tgz
    ```
@@ -62,8 +62,8 @@ project's copies; the provider is tested with `alchemy` 2.0.0-beta.84:
 ```json
 {
   "dependencies": {
-    "@alchemy.run/technitium": "https://github.com/trucke/alchemy-technitium/releases/download/v0.3.1/alchemy.run-technitium-0.3.1.tgz",
-    "@distilled.cloud/technitium": "https://github.com/trucke/alchemy-technitium/releases/download/v0.3.1/distilled.cloud-technitium-0.3.1.tgz",
+    "@alchemy.run/technitium": "https://github.com/sudokvn/alchemy-technitium/releases/download/v0.3.1/alchemy.run-technitium-0.3.1.tgz",
+    "@distilled.cloud/technitium": "https://github.com/sudokvn/alchemy-technitium/releases/download/v0.3.1/distilled.cloud-technitium-0.3.1.tgz",
     "@effect/platform-node": "4.0.5",
     "alchemy": "2.0.0-beta.84",
     "effect": "4.0.5"

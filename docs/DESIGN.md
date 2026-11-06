@@ -4,7 +4,7 @@ This document explains how the client and the provider are built and why. The pa
 describe how to use them: [`@distilled.cloud/technitium`](../packages/technitium/README.md) and
 [`@alchemy.run/technitium`](../packages/alchemy-technitium/README.md).
 
-The repository follows the layout of `trucke/alchemy-proxmox` and `trucke/alchemy-netbird`: a
+The repository follows the layout of `sudokvn/alchemy-proxmox` and `sudokvn/alchemy-netbird`: a
 client in the style of [distilled](https://github.com/alchemy-run/distilled), the generated SDKs
 that Alchemy's providers build on, and an Alchemy provider that calls only that client.
 
